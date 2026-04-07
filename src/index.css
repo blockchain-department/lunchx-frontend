@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* #hero{
+    background-image: url(../public/img1.jpg);
+}
+
+@media (max-width : 640px) {
+    #hero{
+        background-color: #072542;
+        background-image: none;
+    }
+} */
