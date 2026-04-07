@@ -10,15 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
     "@mui/material": "^7.3.6",
     "@mui/x-charts": "^8.23.0",
     "@reown/appkit": "^1.8.19",
     "@reown/appkit-adapter-solana": "^1.8.19",
-    "@reown/appkit-adapter-wagmi": "^1.8.15",
-    "@syncfusion/ej2-react-charts": "^32.1.22",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.16",
     "gsap": "^3.14.2",
@@ -27,10 +24,7 @@
     "react-dom": "^19.2.0",
     "react-icons": "^5.6.0",
     "react-router": "^7.11.0",
-    "react-starfield": "^1.0.3",
     "tailwindcss": "^4.1.18",
-    "viem": "^2.43.5",
-    "wagmi": "^3.1.4",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

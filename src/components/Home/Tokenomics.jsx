@@ -9,31 +9,41 @@ const Tokenomics = () => {
   const [activeBar, setActiveBar] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
+
+   const [width, setWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const distribution = [
-    { label: "Public & Community Sale", percentage: 30, color: "#C0392B  " },
-    { label: "Team & Founders", percentage: 15, color: "#2E86C1  " },
+    { label: "Public Liquidity", percentage: 75, color: "#C0392B  " },
+    { label: "Pre-Sale", percentage: 15, color: "#2E86C1  " },
     {
-      label: "Advisors & Strategic Partners",
+      label: "Team (Locked)",
       percentage: 5,
       color: "#1B4F72  ",
     },
     { label: "Ecosystem Growth & Events", percentage: 5, color: "#A8842C" },
     {
-      label: "Community Reward & Stacking",
-      percentage: 15,
+      label: "Treasury",
+      percentage: 5,
       color: "#E1B12C  ",
     },
-    { label: "Treasury", percentage: 30, color: "#F5F3EE  " },
   ];
   const pieData = distribution.map((item) => ({
     value: item.percentage,
     label: item.label,
     color: item.color,
   }));
-  const size = {
-    width: 300,
-    height: 300,
+  let size = {
+    width: 330,
+    height: 330,
   };
+  
   const StyledText = styled("text")(({ theme }) => ({
     fill: theme.palette.text.primary,
     textAnchor: "middle",
@@ -92,7 +102,6 @@ const Tokenomics = () => {
       ref={sectionRef}
       className="py-32 bg-[#072542] relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(232,190,4,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(232,190,4,0.1)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-20">
           <h2 id="token" className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
@@ -105,7 +114,7 @@ const Tokenomics = () => {
         </div>
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
-            <div className="bg-white/[0.02] transition-transform duration-200 hover:scale-103 backdrop-blur-sm border border-white/5 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-b-yellow-400 hover:border-l-yellow-400">
+            {/* <div className="bg-white/[0.02] transition-transform duration-200 hover:scale-103 backdrop-blur-sm border border-white/5 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-b-yellow-400 hover:border-l-yellow-400">
               <h3 className="text-2xl sm:text-3xl text-center text-[#E8BE04] font-bold mb-6 sm:mb-8">
                 Token Info
               </h3>
@@ -173,7 +182,67 @@ const Tokenomics = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
+            <div className="flex flex-wrap items-center justify-center gap-5">
+  {[
+    {
+      title: "Public Liquidity",
+      percent: "75%",
+      amount: "315,000,000 $LX",
+      desc: "Deep liquidity & smooth trading",
+    },
+    {
+      title: "Pre-Sale",
+      percent: "15%",
+      amount: "63,000,000 $LX",
+      desc: "Early access with vesting",
+    },
+    {
+      title: "Team (Locked)",
+      percent: "5%",
+      amount: "21,000,000 $LX",
+      desc: "6-month lock for trust",
+    },
+    {
+      title: "Treasury",
+      percent: "5%",
+      amount: "21,000,000 $LX",
+      desc: "Growth, buybacks & ops",
+    },
+    {
+      title: "Total Supply",
+      percent: "420M",
+      amount: "$LX Fixed",
+      desc: "Zero inflation model",
+    },
+  ].map((item, i) => (
+    <div
+      key={i}
+      className="group relative h-25 w-50 overflow-hidden rounded-2xl p-[10px] hover:scale-105 bg-white/10 backdrop-blur-3xl transition-all duration-300"
+    >
+      {/* Inner Card */}
+      <div className="h-full w-full rounded-2xl flex flex-col justify-between transition-all">
+
+        {/* Top */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm sm:text-base text-gray-400 transition">
+            {item.title}
+          </h3>
+          <span className="text-lg sm:text-xl font-bold text-yellow-400">
+            {item.percent}
+          </span>
+        </div>
+
+        {/* Middle */}
+        <div className="">
+          <p className="text-base sm:text-lg text-center font-semibold text-white">
+            {item.amount}
+          </p>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
           </div>
           <PieChart
             series={[
@@ -181,12 +250,11 @@ const Tokenomics = () => {
                 data: pieData,
                 paddingAngle: 2,
                 innerRadius: 30,
-               
                 highlightScope: { fade: "global", highlight: "item" },
                 faded: {
                   innerRadius: 30,
                   additionalRadius: -30,
-                  color: "yellow",
+                  color: "white",
                 },
                 arcLabel: (item) => `${item.value}%`,
               },
