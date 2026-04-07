@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaChevronDown } from "react-icons/fa";
+import { ChevronDown } from "lucide-react";
 
 const FAQ = () => {
   const faqs = [
@@ -67,7 +67,7 @@ const FAQ = () => {
                   }
                 >
                   <h1>{item.question}</h1>
-                  <FaChevronDown
+                  <ChevronDown
                     className={`transition-all duration-700 ${faqToggle[key] ? "rotate-180" : "rotate-0"}`}
                   />
                 </div>
