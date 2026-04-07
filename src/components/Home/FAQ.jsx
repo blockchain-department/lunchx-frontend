@@ -3,36 +3,37 @@ import { FaChevronDown } from "react-icons/fa";
 
 const FAQ = () => {
   const faqs = [
-    {
-      question: "What is liquid staking ?",
-      answer:
-        "Liquid staking allows you to stake your TON tokens and receive STAKED in return. Unlike traditional staking, you can use STAKED in DeFi applications while still earning staking rewards.",
-    },
-    {
-      question: "How do i received my staking reward?",
-      answer:
-        "Rewards are automatically reflected in the value of your STAKED tokens.",
-    },
-    {
-      question: "is there a Lock-up period?",
-      answer:
-        "No, there is no lock-up period. You can unstake your TON at any time.",
-    },
-    {
-      question: "What is STAKED",
-      answer:
-        "STAKED is a liquid staking token that represents your staked TON plus rewards.",
-    },
-    {
-      question: "Is my TON safe?",
-      answer:
-        "Yes, our smart contracts are audited and the protocol is non-custodial.",
-    },
-    {
-      question: "Where are the fees?",
-      answer: "We charge a 10% fee on staking rewards only.",
-    },
-  ];
+  {
+    question: "What is Launch X Coin ($LX)?",
+    answer:
+      "Launch X Coin ($LX) is a Solana-based token built around a scarcity-driven economy, combining structured tokenomics, presale mechanics, and long-term holder rewards.",
+  },
+  {
+    question: "How does the presale work?",
+    answer:
+      "The presale is offered at $0.015 per token, with 75% of tokens unlocked at launch and the remaining 25% released after a 15-day lock period.",
+  },
+  {
+    question: "When will I receive my tokens?",
+    answer:
+      "Presale participants receive 75% of their tokens at launch, while the remaining 25% becomes claimable after the 15-day lock period ends.",
+  },
+  {
+    question: "What is the Genesis Drop reward?",
+    answer:
+      "The Genesis Drop distributes 1,000,000 tokens to eligible holders who maintain their full balance for 30 days after launch without selling.",
+  },
+  {
+    question: "What is the Lunar Cycle reward system?",
+    answer:
+      "The Lunar Cycle distributes 1,000,000 tokens monthly for 12 months, based on holder snapshots taken before each reward cycle.",
+  },
+  {
+    question: "What happens if I sell my tokens early?",
+    answer:
+      "If you sell even one token before the required holding period, you may lose eligibility for certain rewards like the Genesis Drop.",
+  },
+];
   const [faqToggle, setFaqToggle] = useState({
     0: false,
     1: false,
@@ -45,7 +46,7 @@ const FAQ = () => {
   console.log(faqToggle);
 
   return (
-    <div className="pt-16 px-6 w-full flex items-center justify-center text-secondary">
+    <div className="py-16 px-6 w-full flex items-center justify-center text-secondary bg-[#072542]">
       <div className="container flex md:flex-row flex-col items-start justify-between">
         <div className="font-bold md:text-[48px] text-[36px] leading-10 md:w-[50%] w-full mb-2.5">
           <h1 className="text-[0.5em] textoutline-light">FAQ</h1>
@@ -81,7 +82,7 @@ const FAQ = () => {
                     origin-top
                     lg:text-[20px] text-[18px]
                     overflow-hidden
-                    mb-2
+                    
                   `}
                 >
                   <h1>{item.answer}</h1>
