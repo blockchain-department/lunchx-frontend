@@ -14,40 +14,40 @@ const Roadmap = () => {
   
   const cardsRef = useRef([]);
 
-  const phases = [
-    {
-      q: "Q1 26",
-      title: "Production Kickoff",
-      status: "upcoming",
-      desc: "Exterior filming begins, with real-time editing of captured footage during production. Early influencer marketing campaigns are launched to build initial awareness and audience engagement.",
-      date: "January 21, 2026",
-      number: 1,
-    },
-    {
-      q: "Q2 26",
-      title: "Principal Photography",
-      date: "February 15, 2026",
-      desc: "Interior shooting commences alongside an expansion of traditional media coverage. Press visibility increases as production momentum continues.",
-      status: "upcoming",
-      number: 2,
-    },
-    {
-      q: "Q3 26",
-      title: "Media & Publicity Push",
-      date: "March 15, 2026",
-      desc: "A focused push across traditional media platforms begins, including interviews with cast and crew. A dedicated podcast tour is launched to amplify reach and audience connection.",
-      status: "upcoming",
-      number: 3,
-    },
-    {
-      q: "Q4 26",
-      title: "Box Office Launch",
-      status: "upcoming",
-      desc: "The film officially premieres in theaters, supported by full-scale marketing and distribution efforts to drive strong box office performance.",
-      date: "April 15, 2026",
-      number: 4,
-    },
-  ];
+ const phases = [
+  {
+    q: "Q1 26",
+    title: "Token Setup & Planning",
+    status: "upcoming",
+    desc: "Creation of the Solana SPL token, metadata configuration, and allocation planning for presale, liquidity, team, and treasury. Wallets are prepared and launch readiness checks begin.",
+    date: "January 10, 2026",
+    number: 1,
+  },
+  {
+    q: "Q2 26",
+    title: "Presale & Landing Page Launch",
+    date: "February 20, 2026",
+    desc: "Presale system goes live with structured pricing and vesting logic. The official landing page is launched to communicate tokenomics, participation steps, and project narrative.",
+    status: "upcoming",
+    number: 2,
+  },
+  {
+    q: "Q3 26",
+    title: "Token Launch & Liquidity Setup",
+    date: "March 25, 2026",
+    desc: "Token is deployed on Solana mainnet with liquidity initialization. Presale distributions begin with 75% unlock, while launch coordination and monitoring ensure a smooth go-live.",
+    status: "upcoming",
+    number: 3,
+  },
+  {
+    q: "Q4 26",
+    title: "Rewards & Ecosystem Expansion",
+    status: "upcoming",
+    desc: "Genesis Drop and Lunar Cycle reward campaigns begin, including holder snapshots, eligibility tracking, and monthly distributions to incentivize long-term participation.",
+    date: "April 30, 2026",
+    number: 4,
+  },
+];
 
   useGSAP(()=>{
 

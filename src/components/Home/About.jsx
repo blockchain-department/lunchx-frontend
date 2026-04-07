@@ -3,16 +3,28 @@ import { Film, ArrowRight, Sparkles, Lock, Globe, Zap } from 'lucide-react';
 import Bg from "../../assets/global/bgggg.jpeg";
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-
+import { DollarSign, Rocket, Gift } from "lucide-react";
 const About = () => {
 
   const cardsRef = useRef([]);
 
-  const features = [
-    { icon: Lock, title: 'Smart Contracts', desc: 'Automated profit distribution via blockchain' },
-    { icon: Globe, title: 'Global Access', desc: 'Invest from anywhere, anytime' },
-    { icon: Zap, title: 'Instant Returns', desc: 'Revenue sharing in real-time' }
-  ];
+const features = [
+  {
+    icon: Rocket,
+    title: "Custom Solana Launch",
+    desc: "Full control over token setup, presale, liquidity, and treasury for a professional launch."
+  },
+  {
+    icon: Gift,
+    title: "Holder Rewards",
+    desc: "Genesis Drop and Lunar Cycle reward campaigns incentivize long-term participation."
+  },
+  {
+    icon: DollarSign,
+    title: "Structured Presale",
+    desc: "Transparent presale pricing, vesting, and allocations for fair and secure participation."
+  }
+];
 
   useGSAP(()=>{
 
@@ -51,15 +63,14 @@ const About = () => {
   },{})
 
   return (
-    <section id="about" className="py-10 md:py-0 min-h-screen relative flex items-center justify-center" style={{backgroundImage: `url(${Bg})`, backgroundRepeat: "no-repeat", backgroundSize: "cover"}}>
+    <section id="about" className="py-10 md:py-0 min-h-screen relative bg-[#072542] flex items-center justify-center">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mb-20">
           <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight" id="heading">
-            Why Invest in RIVERMINED?
+            What is Launch X?
           </h2>
           <p className="text-xl text-white" id='subHeading'>
-            Traditional film investment is opaque and exclusive. 
-            We're democratizing it with blockchain technology.
+            Launch X Coin ($LX) is a Solana-based token built around scarcity, structured tokenomics, and a strategic presale model.
           </p>
         </div>
 

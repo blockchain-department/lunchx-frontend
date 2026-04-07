@@ -97,7 +97,7 @@ const Header = () => {
               to="#holdings"
               className="hover:cursor-pointer text-sm hover:text-lg hover:text-[#E8BE04] text-white transition-colors font-semibold"
             >
-              Holdings
+              Presale
             </h1>
           </nav>
 

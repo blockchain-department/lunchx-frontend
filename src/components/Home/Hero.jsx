@@ -4,6 +4,7 @@ import { useTrailerStore } from "../../utilities/zustand/TrailerStore";
 import Logo from "/img.png";
 
 import gsap from "gsap";
+import CountDown from "./Countdown";
 
 const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -14,9 +15,8 @@ const Hero = () => {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-screen flex md:flex-row flex-col items-center  justify-center overflow-hidden bg-transparent md:gap-8 lg:gap-12"
+      className="relative min-h-screen w-full flex md:flex-row flex-col items-center  justify-center overflow-hidden bg-transparent md:gap-8 lg:gap-12"
       id="hero"
-      // style={{backgroundSize: "100% 100%",backgroundRepeat: "no-repeat"}}
     >
       <video
         className="w-full h-screen absolute -z-1 object-cover"
@@ -28,19 +28,15 @@ const Hero = () => {
       </video>
 
       <div
-        className="relative container flex flex-col items-center justify-between md:flex-row text-left"
+        className="relative container flex flex-col items-center justify-center md:flex-row text-left"
         id="content"
       >
-        <div className="">
+        <div className=" flex flex-col justify-center items-center">
           <h1
-            className="text-6xl pt-20 lg:text-8xl md:text-7xl font-bold mb-6 tracking-tighter animate-fade-in-up"
+            className="text-6xl pt-20 lg:text-8xl text-[#E8BE04] md:text-7xl font-bold mb-6 tracking-tighter animate-fade-in-up"
             style={{ animationDelay: "100ms" }}
           >
-            The Duke of
-            <br />
-            <span className="text-[#E8BE04] inline-block mt-2 bg-gradient-to-r from-white via-gray-300 to-white bg-clip-text animate-gradient">
-              Marylebone
-            </span>
+            Launch X
           </h1>
 
           <p
@@ -53,50 +49,21 @@ const Hero = () => {
           </p>
 
           <div
-            className="flex flex-col items-start md:flex-row gap-4 mb-16 animate-fade-in-up"
+            className="flex flex-col md:flex-row justify-center items-center gap-10 mb-16 animate-fade-in-up"
             style={{ animationDelay: "300ms" }}
           >
-            <button
-              className="group text-[#008AFC] bg-white px-8 py-4 hover:bg-[#E8BE04] rounded-full font-medium text-lg hover:text-black transition-all inline-flex items-center justify-center gap-2"
-              onClick={() => updateToggle(true)}
-            >
-              Watch Trailer
+            <button className="group text-[#008AFC] bg-white px-8 py-4 hover:bg-[#E8BE04] rounded-full font-medium text-lg hover:text-black transition-all inline-flex items-center justify-center gap-2">
+              White Paper
               <ArrowRight className="w-5 h-5 hover:text-black text-[#008AFC] group-hover:translate-x-1 transition-transform" />
+            </button>
+            <button className="group text-[#008AFC] bg-white px-8 py-4 hover:bg-[#E8BE04] rounded-full font-medium text-lg hover:text-black transition-all inline-flex items-center justify-center gap-2">
+              Start Presale
             </button>
           </div>
 
-          <div
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 text-left animate-fade-in-up"
-            style={{ animationDelay: "400ms" }}
-          >
-            {[
-              { value: "$2.5M", label: "Raised", delay: "0s" },
-              { value: "5K+", label: "Holders", delay: "0.1s" },
-              { value: "30%", label: "ROI Target", delay: "0.2s" },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="group cursor-pointer"
-                style={{
-                  animation: `float 3s ease-in-out infinite`,
-                  animationDelay: stat.delay,
-                }}
-              >
-                <div className="text-3xl lg:text-4xl md:text-3xl font-bold mb-1 group-hover:scale-110 transition-transform">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-gray-500 uppercase tracking-wider">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
+          <CountDown remainingTime={100000000} />
         </div>
-
-        <img src={Logo} className="lg:size-100 md:size-90 sm:size-70 " />
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#062139] to-transparent" />
 
       <style jsx>{`
         @keyframes fade-in {
