@@ -106,9 +106,9 @@ const Tokenomics = () => {
     <section
       id="tokenomics"
       ref={sectionRef}
-      className="py-20 bg-secondary relative overflow-hidden"
+      className="py-20 bg-secondary relative overflow-hidden px-6 flex items-center justify-center"
     >
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
+      <div className="container relative z-10">
         <div className="text-left mb-20">
           <h2 id="token" className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
             

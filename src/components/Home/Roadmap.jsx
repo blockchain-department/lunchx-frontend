@@ -74,11 +74,11 @@ const Roadmap = () => {
   return (
     <section
       id="roadmap"
-      className="relative bg-secondary py-20 overflow-hidden"
+      className="relative bg-secondary py-20 overflow-hidden px-6 flex items-center justify-center"
     >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-700/20 via-transparent to-transparent" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-700/20 via-transparent to-transparent" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="container relative z-10">
         <div className="flex flex-col justify-start items-start mb-12 sm:mb-16 lg:mb-20">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-tertiary">
             Roadmap
