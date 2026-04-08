@@ -65,7 +65,7 @@ const Header = () => {
               <img src="/logo.png" alt="Logo" className="w-16 h-16 object-cover" />
             </div>
             <span className="sm:text-lg text-base text-white font-medium tracking-tight">
-              Launch-X
+              LaunchX
             </span>
           </div>
 
@@ -93,7 +93,7 @@ const Header = () => {
             </h1>
 
             <h1
-              onClick={() => handleScrollIntoView("#holdings")}
+              onClick={() => handleScrollIntoView("#presale")}
               to="#holdings"
               className="hover:cursor-pointer text-sm hover:text-lg hover:text-[#E8BE04] text-white transition-colors font-semibold"
             >
