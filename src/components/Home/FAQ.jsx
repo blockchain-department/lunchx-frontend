@@ -57,7 +57,7 @@ const FAQ = () => {
             return (
               <div key={key} className="text-tertiary flex flex-col border-b">
                 <div
-                  className="lg:text-[28px] text-[20px] py-2.5 flex items-center justify-between cursor-pointer"
+                  className="lg:text-[24px] text-[12px] py-2.5 flex items-center justify-between cursor-pointer"
                   onClick={() =>
                     setFaqToggle((prev) => {
                       const allFalse = Object.fromEntries(

@@ -79,10 +79,13 @@ const Roadmap = () => {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-700/20 via-transparent to-transparent" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-indigo-700/20 via-transparent to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+        <div className="flex flex-col justify-start items-start mb-12 sm:mb-16 lg:mb-20">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-tertiary">
             Roadmap
           </h2>
+          <h3 className="text-tertiary text-lg mt-5">
+            From launch to growth in a phased journey.
+          </h3>
         </div>
         <div className="relative">
           <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b bg-primary/10">
@@ -103,8 +106,8 @@ const Roadmap = () => {
                 >
                   <div className="group inline-block w-full">
                     <div
-                      className={`relative rounded-xl sm:rounded-2xl p-4 sm:p-6 backdrop-blur-md transition-all duration-300 ${
-                          "border-primary bg-secondary/20 border hover:shadow-lg hover:shadow-tertiary/15 hover:scale-[1.02] bg-linear-to-br hover:from-secondary/20 hover:to-secondary/80"
+                      className={`relative rounded-xl sm:rounded-2xl p-4 sm:p-6 bg-tertiary/5 backdrop-blur-xl transition-all duration-300 ${
+                          "border-tertiary/10  border hover:shadow-lg hover:shadow-tertiary/15 hover:scale-[1.02] bg-linear-to-br hover:from-secondary/20 hover:to-secondary/80"
                       }`}
                     >
                       {phase.status === "active" && (
@@ -126,7 +129,7 @@ const Roadmap = () => {
                           i % 2 === 0 ? "lg:flex-row-reverse" : "lg:flex-row"
                         }`}
                       >
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-tertiary/10 rounded-lg flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:bg-tertiary/20 group-hover:scale-110 flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-tertiary/5 backdrop-blur-xl rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-tertiary/20 group-hover:scale-110 flex-shrink-0">
                           <Server className="w-4 h-4 sm:w-5 sm:h-5 text-tertiary" />
                         </div>
                         <div
@@ -152,7 +155,7 @@ const Roadmap = () => {
                           >
                             {phase.title}
                           </h3>
-                          <h3 className="text-lg sm:text-xl font-semibold tracking-wide transition-colors duration-300 text-primary/30">
+                          <h3 className="text-sm sm:text-md font-semibold tracking-wide transition-colors duration-300 text-primary">
                             {phase.date}
                           </h3>
                           <p
