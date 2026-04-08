@@ -9,7 +9,7 @@ const statsData = [
 
 const Stats = () => {
   return (
-    <div className="w-full flex justify-start bg-secondary">
+    <div className="w-full flex justify-center sm:justify-start bg-secondary">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-1 text-center">
         {statsData.map((stat, index) => (
           <div
