@@ -8,7 +8,7 @@ const statsData = [
 
 const Stats = () => {
   return (
-    <div className="w-full flex justify-center bg-[#072542] py-16">
+    <div className="w-full flex justify-center bg-[#072542] pt-8">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
         {statsData.map((stat, index) => (
           <div

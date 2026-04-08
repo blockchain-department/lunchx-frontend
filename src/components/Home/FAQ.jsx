@@ -46,7 +46,7 @@ const FAQ = () => {
   console.log(faqToggle);
 
   return (
-    <div className="py-16 px-6 w-full flex items-center justify-center text-secondary bg-[#072542]">
+    <div className="py-10 px-6 w-full flex items-center justify-center text-secondary bg-[#072542]">
       <div className="container flex md:flex-row flex-col items-start justify-between">
         <div className="font-bold md:text-[48px] text-[36px] leading-10 md:w-[50%] w-full mb-2.5">
           <h1 className="text-[0.5em] textoutline-light">FAQ</h1>

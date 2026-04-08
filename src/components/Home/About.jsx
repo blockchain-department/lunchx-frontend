@@ -63,7 +63,7 @@ const features = [
   },{})
 
   return (
-    <section id="about" className="py-10 md:py-0 min-h-screen relative bg-[#072542] flex items-center justify-center">
+    <section id="about" className="py-10 relative bg-[#072542] flex items-center justify-center">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mb-20">
           <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight" id="heading">

@@ -100,7 +100,7 @@ const Tokenomics = () => {
     <section
       id="tokenomics"
       ref={sectionRef}
-      className="py-32 bg-[#072542] relative overflow-hidden"
+      className="py-10 bg-[#072542] relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-20">
