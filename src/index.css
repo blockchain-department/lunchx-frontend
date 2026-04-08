@@ -24,21 +24,21 @@
 }
 
 ::-webkit-scrollbar {
- width: 8px;
+ width: 8px;
 }
 
 /* Track (this replaces most grey) */
 ::-webkit-scrollbar-track {
- background: var(--secondary-color); /* black */
+ background: var(--secondary-color); /* black */
 }
 
 /* Thumb (the moving part) */
 ::-webkit-scrollbar-thumb {
- background: var(--primary-color); /* gold */
- border-radius: 10px;
+ background: var(--primary-color); /* gold */
+ border-radius: 10px;
 }
 
 /* Hover */
 ::-webkit-scrollbar-thumb:hover {
- background: #B96F1A;
+ background: #B96F1A;
 }
