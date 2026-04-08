@@ -100,7 +100,7 @@ const Tokenomics = () => {
     <section
       id="tokenomics"
       ref={sectionRef}
-      className="py-10 bg-[#072542] relative overflow-hidden"
+      className="py-20 bg-secondary relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-20">
@@ -108,14 +108,14 @@ const Tokenomics = () => {
             
             Tokenomics
           </h2>
-          <p className="text-xl text-white">
+          <p className="text-xl text-tertiary">
             Fair distribution, maximum transparency
           </p>
         </div>
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
-            {/* <div className="bg-white/[0.02] transition-transform duration-200 hover:scale-103 backdrop-blur-sm border border-white/5 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-b-yellow-400 hover:border-l-yellow-400">
-              <h3 className="text-2xl sm:text-3xl text-center text-[#E8BE04] font-bold mb-6 sm:mb-8">
+            {/* <div className="bg-tertiary/[0.02] transition-transform duration-200 hover:scale-103 backdrop-blur-sm border border-tertiary/5 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-b-yellow-400 hover:border-l-yellow-400">
+              <h3 className="text-2xl sm:text-3xl text-center text-primary font-bold mb-6 sm:mb-8">
                 Token Info
               </h3>
               <div className="space-y-4 sm:space-y-6">
@@ -128,12 +128,12 @@ const Tokenomics = () => {
                     label: "Address",
                     value: (
                       <div className="group relative inline-block">
-                        <span className="font-mono text-white cursor-help">
+                        <span className="font-mono text-tertiary cursor-help">
                           {formatAddress(
                             "0x321a991f974616addfdea9281cdb3f39faa4537c"
                           )}
                         </span>
-                        <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-yellow-300 text-black text-xs font-mono rounded shadow-xl whitespace-nowrap z-50">
+                        <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-yellow-300 text-secondary text-xs font-mono rounded shadow-xl tertiaryspace-nowrap z-50">
                           0x321a991f974616addfdea9281cdb3f39faa4537c
                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                         </div>
@@ -147,7 +147,7 @@ const Tokenomics = () => {
                         href="https://sepolia.etherscan.io/token/0x321a991f974616addfdea9281cdb3f39faa4537c"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-mono text-white-600 hover:text-blue-500 hover:underline transition-all flex items-center gap-1"
+                        className="font-mono text-tertiary-600 hover:text-blue-500 hover:underline transition-all flex items-center gap-1"
                       >
                         {formatLink(
                           "0x321a991f974616addfdea9281cdb3f39faa4537c"
@@ -171,12 +171,12 @@ const Tokenomics = () => {
                 ].map((item, i) => (
                   <div
                     key={i}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 border-b border-white/5 last:border-0 group gap-2 sm:gap-0"
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 border-b border-tertiary/5 last:border-0 group gap-2 sm:gap-0"
                   >
                     <span className="text-gray-400 text-sm sm:text-base">
                       {item.label}
                     </span>
-                    <span className="font-medium text-sm sm:text-base group-hover:text-white transition-colors break-all sm:break-normal">
+                    <span className="font-medium text-sm sm:text-base group-hover:text-tertiary transition-colors break-all sm:break-normal">
                       {item.value}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ const Tokenomics = () => {
   ].map((item, i) => (
     <div
       key={i}
-      className="group relative h-25 w-50 overflow-hidden rounded-2xl p-[10px] hover:scale-105 bg-white/10 backdrop-blur-3xl transition-all duration-300"
+      className="group relative h-25 md:w-50 w-full overflow-hidden rounded-2xl p-[10px] hover:scale-105 bg-tertiary/10 backdrop-blur-3xl transition-all duration-300"
     >
       {/* Inner Card */}
       <div className="h-full w-full rounded-2xl flex flex-col justify-between transition-all">
@@ -228,14 +228,14 @@ const Tokenomics = () => {
           <h3 className="text-sm sm:text-base text-gray-400 transition">
             {item.title}
           </h3>
-          <span className="text-lg sm:text-xl font-bold text-yellow-400">
+          <span className="text-lg sm:text-xl font-bold text-primary/40">
             {item.percent}
           </span>
         </div>
 
         {/* Middle */}
         <div className="">
-          <p className="text-base sm:text-lg text-center font-semibold text-white">
+          <p className="text-base sm:text-lg text-center font-semibold text-tertiary">
             {item.amount}
           </p>
         </div>
@@ -254,7 +254,7 @@ const Tokenomics = () => {
                 faded: {
                   innerRadius: 30,
                   additionalRadius: -30,
-                  color: "white",
+                  color: "tertiary",
                 },
                 arcLabel: (item) => `${item.value}%`,
               },

@@ -46,18 +46,18 @@ const FAQ = () => {
   console.log(faqToggle);
 
   return (
-    <div className="py-10 px-6 w-full flex items-center justify-center text-secondary bg-[#072542]">
+    <div className="py-10 px-6 w-full flex items-center justify-center text-secondary bg-secondary">
       <div className="container flex md:flex-row flex-col items-start justify-between">
         <div className="font-bold md:text-[48px] text-[36px] leading-10 md:w-[50%] w-full mb-2.5">
-          <h1 className="text-[0.5em] textoutline-light">FAQ</h1>
-          <h1 className="text-white textoutline-light">Expecting questions, we answer</h1>
+          <h1 className="text-[0.5em] textoutline-light text-primary">FAQ</h1>
+          <h1 className="text-tertiary textoutline-light">Expecting questions, we answer</h1>
         </div>
         <div className="md:w-[50%] w-full">
           {faqs.map((item, key) => {
             return (
-              <div key={key} className="flex flex-col border-b">
+              <div key={key} className="text-tertiary flex flex-col border-b">
                 <div
-                  className="lg:text-[30px] text-[26px] py-2.5 font-semibold flex items-center justify-between cursor-pointer"
+                  className="lg:text-[28px] text-[20px] py-2.5 flex items-center justify-between cursor-pointer"
                   onClick={() =>
                     setFaqToggle((prev) => {
                       const allFalse = Object.fromEntries(
@@ -69,7 +69,7 @@ const FAQ = () => {
                 >
                   <h1>{item.question}</h1>
                   <ChevronDown
-                    className={`transition-all duration-700 ${faqToggle[key] ? "rotate-180" : "rotate-0"}`}
+                    className={`text-primary ${faqToggle[key] ? "rotate-180" : "rotate-0"}`}
                   />
                 </div>
                 <div

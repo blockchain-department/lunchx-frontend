@@ -12,56 +12,77 @@ const Hero = () => {
   const containerRef = useRef(null);
   const { updateToggle } = useTrailerStore();
 
+  const handleScrollIntoView = (id) => {
+    const element = document.querySelector(id);
+    element.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const secondsLeft = Math.floor((new Date("2026-04-20").getTime() - Date.now()) / 1000);
+
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.7; // 👈 slower (0.5x)
+    }
+  }, []);
+
   return (
     <section
       ref={containerRef}
       className="relative min-h-screen w-full flex md:flex-row flex-col items-center  justify-center overflow-hidden bg-transparent md:gap-8 lg:gap-12"
       id="hero"
     >
+
+      <div className="absolute w-full h-full bg-secondary/50 -z-1"></div>
+
+      <video ref={videoRef} className='absolute w-full h-full top-0 left-0 object-cover -z-2 opacity-50'  autoPlay loop muted>
+        <source src="/LAUNCHX-VIDEO.mp4" type="video/mp4" />
+      </video>
+
       <video
-        className="w-full h-screen absolute -z-1 object-cover"
+        className="w-full h-full absolute -z-3 object-cover"
         muted
         autoPlay
         loop
       >
-        <source src="/bgvideo.mp4" type="video/mp4" />
+        <source src="https://websites.godaddy.com/categories/v4/videos/raw/video/uA41GmyyG8IMaxXdb" type="video/mp4" />
       </video>
 
       <div
-        className="relative container flex flex-col items-center justify-center md:flex-row text-left"
+        className="relative container flex flex-col items-center justify-center md:flex-row text-left px-6"
         id="content"
       >
+
         <div className=" flex flex-col justify-center items-center">
           <h1
-            className="text-6xl pt-20 lg:text-8xl text-[#E8BE04] md:text-7xl font-bold mb-6 tracking-tighter animate-fade-in-up"
+            className="text-6xl pt-20 lg:text-8xl text-primary md:text-7xl font-bold mb-6 tracking-tighter animate-fade-in-up"
             style={{ animationDelay: "100ms" }}
           >
-            Launch X
+            LaunchX
           </h1>
 
           <p
-            className="lg:text-xl md:text-lg text-white mb-12 max-w-2xl animate-fade-in-up"
+            className="lg:text-xl md:text-lg text-center text-tertiary mb-12 max-w-2xl animate-fade-in-up"
             style={{ animationDelay: "200ms" }}
           >
-            Own a piece of cinematic history. RIVERMINED Token brings
-            transparency, profit-sharing, and community governance to movie
-            production.
+            Own a stake in the future of the space economy. LAUNCH X Coin ($LX) combines scarcity-driven tokenomics, strategic rewards, and community alignment to create a powerful digital asset.
           </p>
 
           <div
             className="flex flex-col md:flex-row justify-center items-center gap-10 mb-16 animate-fade-in-up"
             style={{ animationDelay: "300ms" }}
           >
-            <button className="group text-[#008AFC] bg-white px-8 py-4 hover:bg-[#E8BE04] rounded-full font-medium text-lg hover:text-black transition-all inline-flex items-center justify-center gap-2">
+            <button className="group cursor-pointer px-8 py-4 rounded-full font-medium text-lg transition-all inline-flex items-center justify-center gap-2 border border-primary bg-tertiary/30 backdrop-blur-3xl text-tertiary hover:scale-105 active:scale-95">
               White Paper
-              <ArrowRight className="w-5 h-5 hover:text-black text-[#008AFC] group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="group text-[#008AFC] bg-white px-8 py-4 hover:bg-[#E8BE04] rounded-full font-medium text-lg hover:text-black transition-all inline-flex items-center justify-center gap-2">
+            <button onClick={() => handleScrollIntoView("#presale")} className="group cursor-pointer px-8 py-4 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2">
               Start Presale
             </button>
           </div>
 
-          <CountDown remainingTime={100000000} />
+          <CountDown remainingTime={secondsLeft} />
         </div>
       </div>
 

@@ -9,7 +9,7 @@ import FAQ from "../components/Home/FAQ.jsx";
 
 const Home = () => {
   return (
-    <div className="bg-transparent text-white">
+    <div className="bg-transparent text-tertiary">
       <Hero />
       <Stats />
       <About />

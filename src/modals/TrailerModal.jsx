@@ -18,15 +18,15 @@ const TrailerModal = () => {
         className={`${
           toggle ? "fixed" : "hidden"
         
-      } z-51 min-h-screen bg-[#072542] inset-0 top-0 left-0 flex items-center justify-center`}
+      } z-51 min-h-screen bg-secondary inset-0 top-0 left-0 flex items-center justify-center`}
     >
-        <div className="absolute inset-0 top-15 left-[50%] bg-[#072542] rounded-full size-10 flex items-center justify-center hover:cursor-pointer" onClick={()=>{
+        <div className="absolute inset-0 top-15 left-[50%] bg-secondary rounded-full size-10 flex items-center justify-center hover:cursor-pointer" onClick={()=>{
             const element = document.querySelector("#hero");
             element.scrollIntoView();
             frameRef.current.src = "";
             updateToggle(false);
         }}>
-            <X className="text-white size-7" />
+            <X className="text-tertiary size-7" />
         </div>
         <iframe
           className="h-full w-full"
