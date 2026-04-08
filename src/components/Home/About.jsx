@@ -26,45 +26,45 @@ const About = () => {
     },
   ];
 
-  useGSAP(() => {
-    const ctx = gsap.context(() => {
-      gsap
-        .timeline({
-          scrollTrigger: {
-            trigger: "#about",
-            start: "top 80%",
-            end: "bottom 80%",
-            scrub: 1,
-          },
-        })
-        .from("#heading", {
-          x: -150,
-          opacity: 0,
-        })
-        .from("#subHeading", {
-          x: -150,
-          opacity: 0,
-        })
-        .from(cardsRef.current, {
-          x: -150,
-          opacity: 0,
-          stagger: 0.3,
-        });
-    });
+  // useGSAP(() => {
+  //   const ctx = gsap.context(() => {
+  //     gsap
+  //       .timeline({
+  //         scrollTrigger: {
+  //           trigger: "#about",
+  //           start: "top 80%",
+  //           end: "bottom 80%",
+  //           scrub: 1,
+  //         },
+  //       })
+  //       .from("#heading", {
+  //         x: -150,
+  //         opacity: 0,
+  //       })
+  //       .from("#subHeading", {
+  //         x: -150,
+  //         opacity: 0,
+  //       })
+  //       .from(cardsRef.current, {
+  //         x: -150,
+  //         opacity: 0,
+  //         stagger: 0.3,
+  //       });
+  //   });
 
-    return () => ctx.revert();
-  }, {});
+  //   return () => ctx.revert();
+  // }, {});
 
   return (
     <section
       id="about"
-      className="py-20 relative bg-secondary flex items-center justify-center"
+      className="py-20 relative bg-secondary flex items-center justify-center px-6"
     >
-      <div className="flex justify-between">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row justify-between">
+      <div className="container flex flex-col justify-between gap-8">
+        {/* <div className=""> */}
+          <div className="flex flex-col lg:flex-row justify-between items-center">
             <div className="flex flex-col">
-              <div className="max-w-3xl">
+              {/* <div className=""> */}
                 <h2
                   className="text-5xl md:text-6xl font-bold mb-6 tracking-tight"
                   id="heading"
@@ -76,20 +76,20 @@ const About = () => {
                   scarcity, structured tokenomics, and a strategic presale
                   model.
                 </p>
-              </div>
-              <div>
-                <Stats />
-              </div>
+              {/* </div> */}
+              <Stats />
             </div>
-            <div className="max-w-3xl  flex justify-center items-center">
+            <div className="flex justify-center items-center">
               <img
-                className="md:w-100 md:h-85 w-90 h-70 "
+                className="md:w-120 w-90"
                 src="/asset.png"
                 alt=""
               />
             </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 mt-4">
+          
+          
+          <div className="grid md:grid-cols-3 gap-6">
             {features.map((feature, i) => (
               <div
                 key={i}
@@ -102,7 +102,7 @@ const About = () => {
               </div>
             ))}
           </div>
-        </div>
+        {/* </div> */}
 
         <div></div>
       </div>
