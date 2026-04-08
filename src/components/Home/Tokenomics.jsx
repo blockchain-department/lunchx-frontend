@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Film, ArrowRight, Sparkles, Lock, Globe, Zap } from "lucide-react";
-import { PieChart } from "@mui/x-charts/PieChart";
+import { PieChart, pieArcLabelClasses, pieClasses } from "@mui/x-charts/PieChart";
 import { useDrawingArea } from "@mui/x-charts/hooks";
 import { styled } from "@mui/material/styles";
 import Logo from "/img.png";
 import gsap from "gsap";
+
 const Tokenomics = () => {
   const [activeBar, setActiveBar] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -20,18 +21,23 @@ const Tokenomics = () => {
   }, []);
 
   const distribution = [
-    { label: "Public Liquidity", percentage: 75, color: "#C0392B  " },
-    { label: "Pre-Sale", percentage: 15, color: "#2E86C1  " },
+    { label: "Liquidity and yield generation", percentage: 60, color: "#4f4e4e" },
+    { label: "Pre-Sale", percentage: 25, color: "#2E86C1  " },
     {
-      label: "Team (Locked)",
-      percentage: 5,
+      label: "Presale Bonus",
+      percentage: 3.75,
       color: "#1B4F72  ",
     },
     { label: "Ecosystem Growth & Events", percentage: 5, color: "#A8842C" },
     {
-      label: "Treasury",
-      percentage: 5,
+      label: "Airdrops",
+      percentage: 2.86,
       color: "#E1B12C  ",
+    },
+    {
+      label: "Treasury",
+      percentage: 8.39,
+      color: "#D78821  ",
     },
   ];
   const pieData = distribution.map((item) => ({
@@ -103,7 +109,7 @@ const Tokenomics = () => {
       className="py-20 bg-secondary relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="text-center mb-20">
+        <div className="text-left mb-20">
           <h2 id="token" className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
             
             Tokenomics
@@ -183,66 +189,77 @@ const Tokenomics = () => {
                 ))}
               </div>
             </div> */}
-            <div className="flex flex-wrap items-center justify-center gap-5">
-  {[
-    {
-      title: "Public Liquidity",
-      percent: "75%",
-      amount: "315,000,000 $LX",
-      desc: "Deep liquidity & smooth trading",
-    },
-    {
-      title: "Pre-Sale",
-      percent: "15%",
-      amount: "63,000,000 $LX",
-      desc: "Early access with vesting",
-    },
-    {
-      title: "Team (Locked)",
-      percent: "5%",
-      amount: "21,000,000 $LX",
-      desc: "6-month lock for trust",
-    },
-    {
-      title: "Treasury",
-      percent: "5%",
-      amount: "21,000,000 $LX",
-      desc: "Growth, buybacks & ops",
-    },
-    {
-      title: "Total Supply",
-      percent: "420M",
-      amount: "$LX Fixed",
-      desc: "Zero inflation model",
-    },
-  ].map((item, i) => (
-    <div
-      key={i}
-      className="group relative h-25 md:w-50 w-full overflow-hidden rounded-2xl p-[10px] hover:scale-105 bg-tertiary/10 backdrop-blur-3xl transition-all duration-300"
-    >
-      {/* Inner Card */}
-      <div className="h-full w-full rounded-2xl flex flex-col justify-between transition-all">
-
-        {/* Top */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm sm:text-base text-gray-400 transition">
-            {item.title}
-          </h3>
-          <span className="text-lg sm:text-xl font-bold text-primary/40">
-            {item.percent}
-          </span>
-        </div>
-
-        {/* Middle */}
-        <div className="">
-          <p className="text-base sm:text-lg text-center font-semibold text-tertiary">
-            {item.amount}
-          </p>
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
+            <div className="w-full overflow-x-auto rounded-2xl border border-tertiary/20 bg-tertiary/5 backdrop-blur-xl">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-primary text-tertiary">
+                    <th className="px-6 py-4 text-left font-medium">Allocation</th>
+                    <th className="px-6 py-4 text-right font-medium">Share</th>
+                    <th className="px-6 py-4 text-right font-medium">Amount</th>
+                    {/* <th className="px-6 py-4 text-right text-gray-400 font-medium hidden sm:table-cell">Note</th> */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      title: "Public Liquidity",
+                      percent: "60%",
+                      amount: "2,520,000,000 LX",
+                      color: "#4f4e4e"
+                    },
+                    {
+                      title: "Pre-Sale",
+                      percent: "25%",
+                      amount: "1,050,000,000 LX",
+                      color: "#2E86C1"
+                    },
+                    {
+                      title: "Presale Bonus",
+                      percent: "3.75%",
+                      amount: "157,500,000 LX",
+                      color: "#1B4F72",
+                    },
+                    {
+                      title: "Airdrops",
+                      percent: "2.86%",
+                      amount: "120,000,000 LX",
+                      color: "#A8842C",
+                      
+                    },
+                    {
+                      title: "Ecosystem Growth & Events",
+                      percent: "2.86%",
+                      amount: "120,000,000 LX",
+                      color: "#A8842C",
+                    },
+                    {
+                      title: "Treasury",
+                      percent: "8.39%",
+                      amount: "352,500,000 LX",
+                      color: "#D78821",
+                    },
+                  ].map((item, i, arr) => (
+                    <tr
+                      key={i}
+                      className={`transition-colors hover:bg-tertiary/10 ${i !== arr.length - 1 ? "border-b border-tertiary/10" : ""}`}
+                    >
+                      <td className={`px-6 py-4 font-medium`} style={{ color: `${item.color}` }}>{item.title}</td>
+                      <td className="px-6 py-4 text-right font-bold text-primary"  style={{ color: `${item.color}` }}>{item.percent}</td>
+                      <td className="px-6 py-4 text-right text-tertiary font-semibold"  style={{ color: `${item.color}` }}>{item.amount}</td>
+                      {/* <td className="px-6 py-4 text-right text-gray-500 hidden sm:table-cell">{item.desc}</td> */}
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-primary bg-tertiary/10">
+                    <td className="px-6 py-4 font-bold text-white">Total Supply</td>
+                    <td className="px-6 py-4 text-right font-bold text-primary">100%</td>
+                    <td className="px-6 py-4 text-right font-bold text-tertiary">4.2B $LX</td>
+                    {/* <td className="px-6 py-4 text-right text-gray-400 hidden sm:table-cell">Zero inflation model</td> */}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
           <PieChart
             series={[
@@ -250,17 +267,30 @@ const Tokenomics = () => {
                 data: pieData,
                 paddingAngle: 2,
                 innerRadius: 30,
+                arcLabelRadius: 135,
                 highlightScope: { fade: "global", highlight: "item" },
                 faded: {
-                  innerRadius: 30,
-                  additionalRadius: -30,
-                  color: "tertiary",
+                  // innerRadius: 30,
+                  // additionalRadius: -30,
+                  // color: "#000000",
                 },
                 arcLabel: (item) => `${item.value}%`,
               },
             ]}
             slotProps={{
               legend: { hidden: true },
+            }}
+            sx={{
+              [`& .${pieClasses.arcLabel}`]: {
+                fill: "white",
+                fontSize: "10px",
+                fontWeight: "bold",
+              },
+              [`& .${pieClasses.arc}`]: {
+                stroke: "transparent", // or "none" to remove completely
+                // stroke: "#your-color"  // or any color to change it
+                // strokeWidth: 1 
+              },
             }}
             {...size}
           >
