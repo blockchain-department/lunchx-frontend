@@ -5,15 +5,15 @@ const TimeBlock = ({ value, label }) => {
     <div className="
       flex flex-col items-center justify-center
       rounded-xl
-      bg-white/5 backdrop-blur-md
+      bg-tertiary/5 backdrop-blur-md
       w-14 h-14
       sm:w-16 sm:h-16
       md:w-20 md:h-20
       lg:w-24 lg:h-24
     ">
       <span className="
-        font-mono text-white leading-none
-        text-xl
+        font-mono text-tertiary leading-none
+        text-xl font-bold
         sm:text-2xl
         md:text-3xl
         lg:text-4xl
@@ -22,7 +22,7 @@ const TimeBlock = ({ value, label }) => {
       </span>
 
       <span className="
-        text-white/50 uppercase tracking-widest
+        text-tertiary/50 uppercase tracking-widest
         mt-1
         text-[7px]
         sm:text-[8px]

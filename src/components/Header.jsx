@@ -51,11 +51,11 @@ const Header = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500 ${
         scrolled
-          ? "bg-[#072542]/60 backdrop-blur-xl border-b border-white/5"
+          ? "bg-secondary/60 backdrop-blur-xl border-b border-tertiary/5"
           : "bg-transparent"
       }`}
     >
-      <div className="container sm:px-0 px-6 mx-auto py-5">
+      <div className="container sm:px-0 px-6 mx-auto py-2">
         <div className="flex items-center justify-between">
           <div
             className="flex items-center gap-2 hover:cursor-pointer"
@@ -64,7 +64,7 @@ const Header = () => {
             <div className=" rounded-xl flex items-center justify-center">
               <img src="/logo.png" alt="Logo" className="w-16 h-16 object-cover" />
             </div>
-            <span className="sm:text-lg text-base text-white font-medium tracking-tight">
+            <span className="sm:text-lg text-base text-tertiary font-medium tracking-tight">
               LaunchX
             </span>
           </div>
@@ -73,21 +73,21 @@ const Header = () => {
             <h1
               onClick={() => handleScrollIntoView("#about")}
               to="#about"
-              className="hover:cursor-pointer hover:text-lg hover:text-[#E8BE04] text-sm text-white transition-colors font-semibold"
+              className="hover:cursor-pointer hover:scale-120 hover:text-primary text-sm text-tertiary transition-colors font-semibold"
             >
               About
             </h1>
             <h1
               onClick={() => handleScrollIntoView("#tokenomics")}
               to="#tokenomics"
-              className="hover:cursor-pointer text-sm hover:text-lg text-white hover:text-[#E8BE04] transition-colors font-semibold"
+              className="hover:cursor-pointer text-sm hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold"
             >
               Token
             </h1>
             <h1
               onClick={() => handleScrollIntoView("#roadmap")}
               to="#roadmap"
-              className="hover:cursor-pointer text-sm hover:text-lg text-white hover:text-[#E8BE04] transition-colors font-semibold"
+              className="hover:cursor-pointer text-sm hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold"
             >
               Roadmap
             </h1>
@@ -95,7 +95,7 @@ const Header = () => {
             <h1
               onClick={() => handleScrollIntoView("#presale")}
               to="#holdings"
-              className="hover:cursor-pointer text-sm hover:text-lg hover:text-[#E8BE04] text-white transition-colors font-semibold"
+              className="hover:cursor-pointer text-sm hover:scale-120 hover:text-primary text-tertiary transition-colors font-semibold"
             >
               Presale
             </h1>
@@ -103,7 +103,7 @@ const Header = () => {
 
           <div className="flex  items-center justify-between gap-2 ">
             <button
-              className="bg-white text-black px-5 py-2.5 rounded-full border-none text-sm font-medium hover:bg-[#E8BE04] transition-all hover:cursor-pointer"
+              className="hover:scale-105 active:scale-95 text-secondary px-5 py-2.5 rounded-full border-none text-sm font-medium bg-[#D78821] transition-all hover:cursor-pointer"
               onClick={() => connectWallet()}
             >
               {isConnected
@@ -115,7 +115,7 @@ const Header = () => {
         </div>
       </div>
       <div
-        className="bg-[#E8BE04] h-px"
+        className="bg-primary h-px"
         style={{ width: `${progress}%` }}
       ></div>
     </header>

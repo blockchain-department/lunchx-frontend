@@ -10,3 +10,15 @@
         background-image: none;
     }
 } */
+
+:root{
+    --primary-color: #D78821;
+    --secondary-color: #000000;
+    --tertiary-color: #FFFFFF;
+}
+
+@theme{
+    --color-primary: var(--primary-color);
+    --color-secondary: var(--secondary-color);
+    --color-tertiary: var(--tertiary-color);
+}

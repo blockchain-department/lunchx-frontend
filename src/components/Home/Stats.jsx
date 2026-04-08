@@ -3,12 +3,12 @@ import React from "react";
 const statsData = [
   { value: "$0.015", label: "Presale Price", delay: "0s" },
   { value: "$0.02", label: "Launch Price", delay: "0.1s" },
-  { value: "1M+", label: "Reward Tokens", delay: "0.2s" },
+  { value: "63M", label: "Reward Tokens", delay: "0.2s" },
 ];
 
 const Stats = () => {
   return (
-    <div className="w-full flex justify-center bg-[#072542] pt-8">
+    <div className="w-full flex justify-center bg-secondary pt-8">
       <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
         {statsData.map((stat, index) => (
           <div
@@ -20,9 +20,9 @@ const Stats = () => {
             {/* <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#00c6ff] via-[#0072ff] to-[#00ffe0] opacity-60 blur-xl animate-gradient-move"></div> */}
 
             {/* Inner Card */}
-            <div className="relative flex flex-col items-center justify-center bg-[#072542] rounded-xl w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44">
+            <div className="relative flex flex-col items-center justify-center bg-secondary rounded-xl w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44">
               <div
-                className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-1 text-white transition-transform group-hover:scale-110 glow"
+                className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-1 text-tertiary transition-transform group-hover:scale-110 glow"
                 style={{
                   animation: `float 3s ease-in-out infinite`,
                   animationDelay: stat.delay,
@@ -30,7 +30,7 @@ const Stats = () => {
               >
                 {stat.value}
               </div>
-              <div className="text-sm md:text-base text-[#E8BE04] uppercase tracking-wider">
+              <div className="text-sm md:text-base text-primary uppercase tracking-wider">
                 {stat.label}
               </div>
             </div>
