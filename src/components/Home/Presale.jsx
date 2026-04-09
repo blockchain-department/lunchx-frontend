@@ -65,7 +65,7 @@ const Presale = () => {
 
         {/* Input Section */}
         <div className="space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
-          <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl p-4 transition-all">
+          <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
             <div className="flex justify-between text-xs mb-2">
               <span className='text-tertiary'>You Pay</span>
               <span className='text-tertiary'>Balance: 0.00 SOL</span>
@@ -104,7 +104,7 @@ const Presale = () => {
                 value={lxAmount}
                 placeholder="0"
               />
-              <div className="flex items-center gap-2 bg-tertiary/10 px-3 py-1.5 rounded-xl">
+              <div className="flex items-center gap-2 bg-tertiary/10 px-3 py-2 rounded-xl">
                 <Zap size={18} className="text-primary fill-primary" />
                 <span className="font-bold text-tertiary">LX</span>
               </div>
@@ -116,7 +116,7 @@ const Presale = () => {
         <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
           <div className="flex justify-between text-tertiary">
             <span>Price</span>
-            <span className="text-tertiary/80">1 LX = $0.015</span>
+            <span className="text-tertiary/80">1 LX = $0.00420</span>
           </div>
           <div className="flex justify-between text-tertiary">
             <span>Exchange Rate</span>
@@ -130,7 +130,7 @@ const Presale = () => {
 
         {/* Action Button */}
         <button 
-            className="cursor-pointer w-full mt-8 bg-secondary/20 backdrop-blur-3xl hover:text-tertiary text-primary border border-primary py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+            className="cursor-pointer w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-103 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
             onClick={()=>handleConnect()}
         >
           <Wallet size={20} />

@@ -11,14 +11,14 @@ import {
 
 const Footer = () => {
   return (
-    <footer className="border-t border-tertiary/5 py-12 bg-secondary">
-      <div className="max-w-7xl mx-auto px-6">
+    <footer className="border-t w-full border-tertiary/5 py-12 bg-secondary flex items-center justify-center">
+      <div className="container">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <div className=" rounded-lg flex items-center justify-center">
               <img src="/logo.png" alt="Logo" className="w-14 h-14" />
             </div>
-            <span className="font-medium text-primary">LaunchX</span>
+            <span className="font-medium text-tertiary">LaunchX</span>
           </div>
 
           <div className="flex gap-2 text-sm text-tertiary">
