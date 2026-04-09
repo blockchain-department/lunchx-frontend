@@ -5,8 +5,8 @@ const TimeBlock = ({ value, label }) => {
       flex flex-col items-center justify-center
       rounded-xl
       bg-secondary/30 backdrop-blur-md
-      w-14 h-14
-      sm:w-16 sm:h-16
+      w-16 h-16
+      sm:w-18 sm:h-18
       md:w-20 md:h-20
       lg:w-24 lg:h-24
     ">
