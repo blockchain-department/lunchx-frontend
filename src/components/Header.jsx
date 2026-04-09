@@ -62,9 +62,13 @@ const Header = () => {
             onClick={() => handleScrollIntoView("#hero")}
           >
             <div className=" rounded-xl flex items-center justify-center">
-              <img src="/logo.png" alt="Logo" className="w-16 h-16 object-cover" />
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="w-16 h-16 object-cover"
+              />
             </div>
-            <span className="sm:text-lg text-base text-tertiary font-medium tracking-tight">
+            <span className="sm:text-xl text-base text-tertiary font-medium tracking-tight">
               LaunchX
             </span>
           </div>
@@ -73,21 +77,21 @@ const Header = () => {
             <h1
               onClick={() => handleScrollIntoView("#about")}
               to="#about"
-              className="hover:cursor-pointer hover:scale-120 hover:text-primary text-sm text-tertiary transition-colors font-semibold"
+              className="hover:cursor-pointer hover:scale-120 hover:text-primary text-lg text-tertiary transition-colors font-semibold duration-300"
             >
               About
             </h1>
             <h1
               onClick={() => handleScrollIntoView("#tokenomics")}
               to="#tokenomics"
-              className="hover:cursor-pointer text-sm hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold"
+              className="hover:cursor-pointer text-lg hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold duration-300"
             >
               Token
             </h1>
             <h1
               onClick={() => handleScrollIntoView("#roadmap")}
               to="#roadmap"
-              className="hover:cursor-pointer text-sm hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold"
+              className="hover:cursor-pointer text-lg hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold duration-300"
             >
               Roadmap
             </h1>
@@ -95,7 +99,7 @@ const Header = () => {
             <h1
               onClick={() => handleScrollIntoView("#presale")}
               to="#holdings"
-              className="hover:cursor-pointer text-sm hover:scale-120 hover:text-primary text-tertiary transition-colors font-semibold"
+              className="hover:cursor-pointer text-lg hover:scale-120 hover:text-primary text-tertiary transition-colors font-semibold duration-300"
             >
               Presale
             </h1>
@@ -103,21 +107,17 @@ const Header = () => {
 
           <div className="flex  items-center justify-between gap-2 ">
             <button
-              className="hover:scale-105 active:scale-95 text-secondary px-5 py-2.5 rounded-full border-none text-sm font-medium bg-[#D78821] transition-all hover:cursor-pointer"
+              className="hover:scale-105 active:scale-95 text-secondary px-5 py-2.5 rounded-full border-none text-md font-semibold bg-[#D78821] hover:text-tertiary duration-300 transition-all hover:cursor-pointer"
               onClick={() => connectWallet()}
             >
               {isConnected
                 ? `${address.slice(0, 6)}...${address.slice(-4)}`
                 : "Connect"}
-               
             </button>
           </div>
         </div>
       </div>
-      <div
-        className="bg-primary h-px"
-        style={{ width: `${progress}%` }}
-      ></div>
+      <div className="bg-primary h-px" style={{ width: `${progress}%` }}></div>
     </header>
   );
 };

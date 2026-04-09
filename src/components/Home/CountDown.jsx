@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-
 const TimeBlock = ({ value, label }) => {
   return (
     <div className="
       flex flex-col items-center justify-center
       rounded-xl
-      bg-tertiary/5 backdrop-blur-md
+      bg-secondary/30 backdrop-blur-md
       w-14 h-14
       sm:w-16 sm:h-16
       md:w-20 md:h-20
@@ -22,7 +21,7 @@ const TimeBlock = ({ value, label }) => {
       </span>
 
       <span className="
-        text-tertiary/50 uppercase tracking-widest
+        text-primary font-bold uppercase tracking-widest
         mt-1
         text-[7px]
         sm:text-[8px]
