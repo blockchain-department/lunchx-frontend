@@ -64,7 +64,7 @@ const About = () => {
       <div className="container flex flex-col justify-between gap-8">
         
           <div className="relative flex  flex-col lg:flex-row justify-between items-center">
-            <div className="flex flex-col">
+            <div className="flex flex-col lg:w-[50%]">
               
                 <h2
                   className="text-5xl md:text-6xl font-bold mb-6 tracking-tight"
@@ -82,7 +82,7 @@ const About = () => {
             </div>
             {/* <div className="flex right-0 justify-center items-center"> */}
               <img
-                className="md:w-140 md:right-0"
+                className="lg:size-100 md:size-[35%] md:right-0 md:pt-0 pt-10"
                 src="/imggg.png"
                 alt=""
               />

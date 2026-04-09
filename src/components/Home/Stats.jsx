@@ -9,8 +9,8 @@ const statsData = [
 
 const Stats = () => {
   return (
-    <div className="w-full flex justify-center md:justify-start bg-secondary">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+    <div className="w-full flex justify-center bg-secondary pt-10">
+      <div className="grid grid-cols-2 2xl:grid-cols-4 gap-12 text-center">
         {statsData.map((stat, index) => (
           <div
             key={index}
@@ -18,7 +18,7 @@ const Stats = () => {
             style={{ animationDelay: stat.delay }}
           >
             
-            <div className="relative flex flex-col items-center justify-center bg-secondary rounded-xl w-32 h-24 sm:w-36 sm:h-32 md:w-40 md:h-38 lg:w-44 lg:h-42">
+            <div className="relative flex flex-col items-center justify-center bg-secondary rounded-xl">
               <div
                 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-1 text-tertiary transition-transform group-hover:scale-110 glow"
                 style={{
