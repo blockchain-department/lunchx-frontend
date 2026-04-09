@@ -107,7 +107,7 @@ const Header = () => {
 
           <div className="flex  items-center justify-between gap-2 ">
             <button
-              className="hover:scale-105 active:scale-95 text-secondary px-5 py-2.5 rounded-full border-none text-md font-semibold bg-[#D78821] hover:text-tertiary duration-300 transition-all hover:cursor-pointer"
+              className="hover:scale-105 active:scale-95 text-secondary px-5 py-2.5 rounded-full border-none text-md font-semibold bg-primary hover:text-tertiary duration-300 transition-all hover:cursor-pointer"
               onClick={() => connectWallet()}
             >
               {isConnected
