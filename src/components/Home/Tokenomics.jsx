@@ -21,23 +21,22 @@ const Tokenomics = () => {
   }, []);
 
   const distribution = [
-    { label: "Liquidity and yield generation", percentage: 60, color: "#4f4e4e" },
-    { label: "Pre-Sale", percentage: 25, color: "#2E86C1  " },
+    { label: "Liquidity and yield generation", percentage: 60, color: "#4F81BD" },
+    { label: "Pre-Sale", percentage: 25, color: "#00B050" },
     {
       label: "Presale Bonus",
       percentage: 3.75,
-      color: "#1B4F72  ",
+      color: "#FFC000",
     },
-    { label: "Ecosystem Growth & Events", percentage: 5, color: "#A8842C" },
     {
       label: "Airdrops",
       percentage: 2.86,
-      color: "#E1B12C  ",
+      color: "#AA6FDB",
     },
     {
       label: "Treasury",
       percentage: 8.39,
-      color: "#D78821  ",
+      color: "#FF0000  ",
     },
   ];
   const pieData = distribution.map((item) => ({
@@ -205,38 +204,32 @@ const Tokenomics = () => {
                       title: "Public Liquidity",
                       percent: "60%",
                       amount: "2,520,000,000 LX",
-                      color: "#4f4e4e"
+                      color: "#4F81BD"
                     },
                     {
                       title: "Pre-Sale",
                       percent: "25%",
                       amount: "1,050,000,000 LX",
-                      color: "#2E86C1"
+                      color: "#00B050"
                     },
                     {
                       title: "Presale Bonus",
                       percent: "3.75%",
                       amount: "157,500,000 LX",
-                      color: "#1B4F72",
+                      color: "#FFC000",
                     },
                     {
                       title: "Airdrops",
                       percent: "2.86%",
                       amount: "120,000,000 LX",
-                      color: "#A8842C",
+                      color: "#AA6FDB",
                       
-                    },
-                    {
-                      title: "Ecosystem Growth & Events",
-                      percent: "2.86%",
-                      amount: "120,000,000 LX",
-                      color: "#A8842C",
                     },
                     {
                       title: "Treasury",
                       percent: "8.39%",
                       amount: "352,500,000 LX",
-                      color: "#D78821",
+                      color: "#FF0000",
                     },
                   ].map((item, i, arr) => (
                     <tr
