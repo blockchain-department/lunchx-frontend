@@ -1,14 +1,151 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, Info, Zap, ArrowRight } from 'lucide-react';
-import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
+import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, rpc_url } from '../../utilities/config';
+import { Presale } from '@meteora-ag/presale';
+import { BN } from 'bn.js';
+import toast from 'react-hot-toast';
 
-const Presale = () => {
+const PresaleComp = () => {
   const [solAmount, setSolAmount] = useState('');
   const [lxAmount, setLxAmount] = useState(0);
   const { address, isConnected } = useAppKitAccount();
   const { open, close } = useAppKit();
+  const [solBalance,setSolBalance] = useState(0);
+  const connection = new Connection(rpc_url, "confirmed");
+  const { walletProvider : solWalletProvider } = useAppKitProvider("solana");
 
-  const EXCHANGE_RATE = 25000; // 1 SOL = 2900 LX (Calculated: 145 / 0.05)
+  const EXCHANGE_RATE = 20000; // 1 SOL = 2900 LX (Calculated: 145 / 0.05)
+
+  const depositTokens = async () => {
+
+    if(!isConnected){
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    if(solAmount <= 0){
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if(solAmount > solBalance){
+      toast.error("Insufficient balance");
+      return;
+    }
+
+    console.log("Withdraw Tokens Called!!!");
+
+    try {
+      const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+      );
+
+      console.log("Presale Instance Created",presaleInstance);
+
+      const depositTx = await presaleInstance.deposit({
+        amount: new BN(parseFloat(solAmount) * 1e9),  // 0.1 SOL
+        owner: new PublicKey(address),
+        registryIndex: new BN(0)  // Default
+      });
+
+      console.log("Deposit Transaction Created",depositTx);
+
+      const txSig = await solWalletProvider.sendTransaction(depositTx, connection);
+      console.log("Withdraw transaction sent:", txSig);
+
+      await connection.confirmTransaction(
+        {
+          signature: txSig,
+          lastValidBlockHeight: depositTx.lastValidBlockHeight,
+          blockhash: depositTx.recentBlockhash,
+        },
+        "finalized"
+      );
+
+      console.log("Transaction Confirmed");
+      toast.success("Transaction Confirmed");
+      
+    } catch (error) {
+      console.log("Error in withdrawTokens:", error);
+      toast.error("Transaction Failed");
+    }
+    
+  };
+
+  const claimTokens = async () => {
+
+    if(!isConnected){
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    if(solAmount <= 0){
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if(solAmount > solBalance){
+      toast.error("Insufficient balance");
+      return;
+    }
+
+    try{
+
+      const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+      );
+
+      console.log("Presale Instance Created",presaleInstance);
+
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
+
+      console.log("Escrows Fetched",escrows);
+      
+
+      const withdrawTxs = await Promise.all(
+        escrows.map(async (escrow) => {
+          const escrowAccount = escrow.getEscrowAccount();
+          return presaleInstance.withdraw({
+            amount: new BN(parseFloat(solAmount) * 1e9),
+            owner: escrowAccount.owner,
+            registryIndex: new BN(escrowAccount.registryIndex),
+          });
+        })
+      );
+
+      console.log("Withdraw Transactions Created",withdrawTxs);
+
+      await Promise.all(
+        withdrawTxs.map(async (withdrawTx) => {
+
+          const txSig = await solWalletProvider.sendTransaction(withdrawTx, connection);
+          console.log("Withdraw transaction sent:", txSig);
+
+          await connection.confirmTransaction(
+            {
+              signature: txSig,
+              lastValidBlockHeight: withdrawTx.lastValidBlockHeight,
+              blockhash: withdrawTx.recentBlockhash,
+            },
+            "finalized"
+          );
+        })
+      ); 
+
+      toast.success("Transaction Confirmed");
+
+    } catch (error) {
+      console.log("Error in withdrawTokens:", error);
+      toast.error("Transaction Failed");
+    }
+    
+  };
 
   const handleConnect = () => {
     if (isConnected) {
@@ -18,8 +155,24 @@ const Presale = () => {
     }
   }
 
+  async function getSolBalance() {
+    const pubkey = new PublicKey(address);
+    const lamports = await connection.getBalance(pubkey);
+    return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
+  }
+
   useEffect(() => {
-    if (solAmount > 0) {
+    if (isConnected) {
+      getSolBalance().then((balance) => {
+        setSolBalance(balance);
+      });
+    }else{
+      setSolBalance(0);
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (solAmount > 0 && solAmount <= solBalance) {
       setLxAmount((solAmount * EXCHANGE_RATE).toLocaleString());
     } else {
       setLxAmount(0);
@@ -99,6 +252,21 @@ const Presale = () => {
           </div>
         </div>
 
+        <div className="flex items-center justify-center gap-2">
+          <button 
+            className="cursor-pointer w-[50%] mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+            onClick={()=>depositTokens()}
+          >
+            Deposit
+          </button>
+          <button 
+              className="cursor-pointer w-[50%] mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+              onClick={()=>claimTokens()}
+          >
+            Withdraw
+          </button>
+        </div>
+
         {/* Details List */}
         <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
           <div className="flex justify-between text-tertiary">
@@ -121,7 +289,7 @@ const Presale = () => {
             onClick={()=>handleConnect()}
         >
           <Wallet size={20} />
-          {isConnected ? `${address.slice(0,4)}...${address.slice(-4)}` : "Connect Wallet"}
+          {isConnected ? `${solBalance.toFixed(2)} SOL` : "Connect Wallet"}
         </button>
 
         {/* Footer Info */}
@@ -134,4 +302,4 @@ const Presale = () => {
   );
 };
 
-export default Presale;
+export default PresaleComp;

@@ -4,6 +4,7 @@ import { SolanaAdapter, useAppKitConnection } from "@reown/appkit-adapter-solana
 import { solana, solanaTestnet, solanaDevnet } from "@reown/appkit/networks";
 import { PublicKey } from "@solana/web3.js";
 import { useState, useEffect } from "react";
+import { network } from "../config";
 
 const solanaWeb3JsAdapter = new SolanaAdapter();
 
@@ -16,9 +17,12 @@ const metadata = {
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };
 
+const networks = network === "mainnet" ? [solana] : network === "testnet" ? [solanaTestnet] : [solanaDevnet];
+
+
 createAppKit({
   adapters: [solanaWeb3JsAdapter],
-  networks: [solana, solanaTestnet, solanaDevnet],
+  networks: networks,
   metadata,
   projectId,
   features: {
