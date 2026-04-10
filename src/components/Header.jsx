@@ -86,7 +86,7 @@ const Header = () => {
               to="#tokenomics"
               className="hover:cursor-pointer text-lg hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold duration-300"
             >
-              Token
+              Tokenomics
             </h1>
             <h1
               onClick={() => handleScrollIntoView("#roadmap")}

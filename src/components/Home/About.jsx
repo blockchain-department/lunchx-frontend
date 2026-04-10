@@ -58,34 +58,35 @@ const About = () => {
   return (
     <section
       id="about"
-      className="py-20 relative bg-secondary flex items-center justify-center px-6"
+      className="py-20 relative bg-secondary flex items-center justify-center"
     >
+      <div className="flex w-full justify-center items-center px-6">
       <div className="container flex flex-col justify-between gap-8">
-        {/* <div className=""> */}
-          <div className="flex flex-col lg:flex-row justify-between items-center">
+        
+          <div className="relative flex  flex-col lg:flex-row justify-between items-center">
             <div className="flex flex-col">
-              {/* <div className=""> */}
+              
                 <h2
                   className="text-5xl md:text-6xl font-bold mb-6 tracking-tight"
                   id="heading"
                 >
                   What is <span className="text-primary">LaunchX</span>?
                 </h2>
-                <p className="text-xl text-tertiary" id="subHeading">
-                  Launch X Coin ($LX) is a Solana-based token built around
-                  scarcity, structured tokenomics, and a strategic presale
-                  model.
+                <p className="text-base sm:text-lg md:text-xl lg:text-2xl max-w-2xl text-tertiary" id="subHeading">
+                   Launch X Coin ($LX) is a Solana-based token built around
+                   scarcity, structured tokenomics, and a strategic presale
+                   model.
                 </p>
               {/* </div> */}
               <Stats />
             </div>
-            <div className="flex justify-center items-center">
+            {/* <div className="flex right-0 justify-center items-center"> */}
               <img
-                className="md:w-120 w-90"
-                src="/asset.png"
+                className="md:w-140 md:right-0"
+                src="/imggg.png"
                 alt=""
               />
-            </div>
+            {/* </div> */}
           </div>
           
           
@@ -102,9 +103,10 @@ const About = () => {
               </div>
             ))}
           </div>
-        {/* </div> */}
+        
 
-        <div></div>
+        
+      </div>
       </div>
     </section>
   );

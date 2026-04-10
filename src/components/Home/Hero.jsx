@@ -70,14 +70,21 @@ const Hero = () => {
           </p>
 
           <div
-            className="flex flex-col md:flex-row justify-center items-center gap-10 mb-16 animate-fade-in-up"
+            className="flex flex-col md:flex-row justify-center items-center gap-7 mb-16 animate-fade-in-up"
             style={{ animationDelay: "300ms" }}
           >
-            <button className="group cursor-pointer px-8 py-4 rounded-full font-medium text-lg hover:text-tertiary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary bg-secondary/20 text-primary hover:scale-105 active:scale-95">
-              White Paper
-              <ArrowRight className="w-5 h-5 mt-1.5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button onClick={() => handleScrollIntoView("#presale")} className="group cursor-pointer hover:text-white px-8 py-4 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2">
+
+
+            <button
+  onClick={() => window.open("/whitepaper.pdf", "_blank")}
+  className="group cursor-pointer px-8 py-4 rounded-full font-medium text-lg hover:text-tertiary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary bg-secondary/20 text-primary hover:scale-105 active:scale-95"
+>
+  White Paper
+  <ArrowRight className="w-5 h-5 mt-1.5 group-hover:translate-x-1 transition-transform" />
+</button>
+
+
+            <button onClick={() => handleScrollIntoView("#presale")} className="group cursor-pointer hover:text-white px-12 py-4 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2">
               Start Presale
             </button>
           </div>
