@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+body{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root{
+    --primary-color: #63A8D1;
+    --secondary-color: #000000;
+    --tertiary-color: #FFFFFF;
+}
+
+@theme{
+    --color-primary: var(--primary-color);
+    --color-secondary: var(--secondary-color);
+    --color-tertiary: var(--tertiary-color);
+}
+
+::-webkit-scrollbar {
+ width: 8px;
+}
+
+/* Track (this replaces most grey) */
+::-webkit-scrollbar-track {
+ background: var(--secondary-color); /* black */
+}
+
+/* Thumb (the moving part) */
+::-webkit-scrollbar-thumb {
+ background: var(--primary-color); /* gold */
+ border-radius: 10px;
+}
+
+/* Hover */
+::-webkit-scrollbar-thumb:hover {
+ background: var(--primary-color);
+}
