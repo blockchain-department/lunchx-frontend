@@ -1,12 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Film, ArrowRight, Sparkles, Lock, Globe, Zap } from "lucide-react";
-import Bg from "../../assets/global/bgggg.jpeg";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { DollarSign, Rocket, Gift } from "lucide-react";
 import Stats from "./Stats";
 const About = () => {
-  const cardsRef = useRef([]);
 
   const features = [
     {
@@ -25,35 +19,6 @@ const About = () => {
       desc: "Transparent presale pricing, vesting, and allocations for fair and secure participation.",
     },
   ];
-
-  // useGSAP(() => {
-  //   const ctx = gsap.context(() => {
-  //     gsap
-  //       .timeline({
-  //         scrollTrigger: {
-  //           trigger: "#about",
-  //           start: "top 80%",
-  //           end: "bottom 80%",
-  //           scrub: 1,
-  //         },
-  //       })
-  //       .from("#heading", {
-  //         x: -150,
-  //         opacity: 0,
-  //       })
-  //       .from("#subHeading", {
-  //         x: -150,
-  //         opacity: 0,
-  //       })
-  //       .from(cardsRef.current, {
-  //         x: -150,
-  //         opacity: 0,
-  //         stagger: 0.3,
-  //       });
-  //   });
-
-  //   return () => ctx.revert();
-  // }, {});
 
   return (
     <section
@@ -77,16 +42,13 @@ const About = () => {
                    scarcity, structured tokenomics, and a strategic presale
                    model.
                 </p>
-              {/* </div> */}
               <Stats />
             </div>
-            {/* <div className="flex right-0 justify-center items-center"> */}
               <img
                 className="lg:size-100 md:size-[35%] md:right-0 md:pt-0 pt-10"
                 src="/imggg.png"
                 alt=""
               />
-            {/* </div> */}
           </div>
           
           
@@ -94,7 +56,6 @@ const About = () => {
             {features.map((feature, i) => (
               <div
                 key={i}
-                ref={(el) => (cardsRef.current[i] = el)}
                 className="group bg-tertiary/5 backdrop-blur-xl border border-tertiary/5 rounded-2xl p-8 hover:border-l-primary hover:border-b-primary hover:bg-tertiary/[0.04] hover:border-tertiary/10"
               >
                 <feature.icon className="w-10 h-10 mb-6 text-primary transition-transform" />

@@ -3,7 +3,7 @@ import React from "react";
 const statsData = [
   { value: "$0.00420", label: "Presale Price" },
   { value: "$0.01", label: "Launch Price"},
-  { value: "63M", label: "Reward Tokens"},
+  { value: "2.7M+", label: "Reward Tokens"},
   {value: "4.2B", label : "Total Supply"}
 ];
 

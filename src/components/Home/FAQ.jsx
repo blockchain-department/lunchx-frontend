@@ -11,7 +11,7 @@ const FAQ = () => {
   {
     question: "How does the presale work?",
     answer:
-      "The presale is offered at $0.015 per token, with 75% of tokens unlocked at launch and the remaining 25% released after a 15-day lock period.",
+      "The presale is offered at $0.00420 per token, with 75% of tokens unlocked at launch and the remaining 25% released after a 15-day lock period.",
   },
   {
     question: "When will I receive my tokens?",
@@ -57,7 +57,7 @@ const FAQ = () => {
             return (
               <div key={key} className="text-tertiary flex flex-col border-b">
                 <div
-                  className="lg:text-[24px] text-[12px] py-2.5 flex items-center justify-between cursor-pointer"
+                  className="lg:text-[24px] text-[20px] py-2.5 flex items-center justify-between cursor-pointer"
                   onClick={() =>
                     setFaqToggle((prev) => {
                       const allFalse = Object.fromEntries(
@@ -80,7 +80,7 @@ const FAQ = () => {
                     flex-col
                     transition-all duration-1000
                     origin-top
-                    lg:text-[20px] text-[18px]
+                    lg:text-[20px] text-[14px]
                     overflow-hidden
                     
                   `}

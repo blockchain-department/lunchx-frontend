@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 
 const solanaWeb3JsAdapter = new SolanaAdapter();
 
-const projectId = "d2ef7db8098b43a02173b5aa49749806";
+const projectId = import.meta.env.VITE_PROJECT_ID;
 
 const metadata = {
   name: "AppKit",

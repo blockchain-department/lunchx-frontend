@@ -167,17 +167,6 @@ const Roadmap = () => {
                           >
                             {phase.desc}
                           </p>
-                          {/* <p
-                            className={`mt-2 text-sm sm:text-base leading-relaxed transition-all duration-300 max-h-0 overflow-hidden opacity-0 group-hover:max-h-20 group-hover:opacity-100 ${
-                              phase.status === "active"
-                                ? "text-gray-200 !max-h-20 !opacity-100"
-                                : "text-gray-400 group-hover:text-gray-200"
-                            }`}
-                          >
-                            {phase.status === "active"
-                              ? "Currently in progress - actively developing and launching the platform"
-                              : "Upcoming phase in our development roadmap"}
-                          </p> */}
                         </div>
                       </div>
                     </div>

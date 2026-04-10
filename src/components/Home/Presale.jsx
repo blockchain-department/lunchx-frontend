@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Info, ArrowDown, Zap, ArrowRight } from 'lucide-react';
+import { Wallet, Info, Zap, ArrowRight } from 'lucide-react';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 
 const Presale = () => {
   const [solAmount, setSolAmount] = useState('');
   const [lxAmount, setLxAmount] = useState(0);
-  const { address, isConnected, caipAddress, status, embeddedWalletInfo } =
-      useAppKitAccount();
-    const { open, close } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
+  const { open, close } = useAppKit();
 
-  // Constants for the presale logic
-  const SOL_PRICE = 145; // Hypothetical SOL price in USD
-  const LX_PRICE = 0.05; // LX token price in USD
   const EXCHANGE_RATE = 25000; // 1 SOL = 2900 LX (Calculated: 145 / 0.05)
 
   const handleConnect = () => {
@@ -33,10 +29,6 @@ const Presale = () => {
   return (
     <div id='presale' className="py-20 bg-secondary text-tertiary flex items-center justify-center p-6 font-sans">
       <div className="relative w-full max-w-5xl bg-tertiary/5 backdrop-blur-xl border border-tertiary/10 rounded-3xl px-8 py-12 shadow-2xl">
-        
-        {/* <video className='absolute w-full h-full top-0 left-0 object-cover -z-1 rounded-3xl opacity-20'  autoPlay loop muted>
-          <source src="/LAUNCHX-VIDEO.mp4" type="video/mp4" />
-        </video> */}
 
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -44,12 +36,7 @@ const Presale = () => {
             <h1 className="text-2xl font-bold bg-clip-text text-tertiary">
               LX Presale
             </h1>
-            {/* <p className="text-gray-400 text-sm">Round 1: Live Now</p> */}
           </div>
-          {/* <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            Active
-          </div> */}
         </div>
 
         {/* Progress Bar */}
@@ -140,7 +127,7 @@ const Presale = () => {
         {/* Footer Info */}
         <div className="mt-6 flex items-start gap-2 text-[13px] text-white leading-relaxed uppercase tracking-widest text-center justify-center">
           <Info size={14} className="mt-1" />
-          <span>Listing price will be $0.02. Buy now for 2.4x gains.</span>
+          <span>Listing price: $0.01. Buy now for a potential 2.4× return. Hold for 30 days to receive a 15% bonus allocation.</span>
         </div>
       </div>
     </div>
