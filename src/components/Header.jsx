@@ -1,22 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Film, ArrowRight, Sparkles, Lock, Globe, Zap } from "lucide-react";
-import { NavLink } from "react-router";
+import { useEffect, useState } from "react";
 import {
   useAppKit,
   useAppKitAccount,
   useAppKitNetwork,
 } from "@reown/appkit/react";
-import { contract_address, network } from "../utilities/config.js";
-import { solana, solanaDevnet, solanaTestnet } from "@reown/appkit/networks";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
-  const { open, close } = useAppKit();
-  const { address, isConnected, caipAddress, status, embeddedWalletInfo } =
-    useAppKitAccount();
-  const { caipNetwork, caipNetworkId, chainId, switchNetwork } =
-    useAppKitNetwork();
-  const [parsedToken, setParsedToken] = useState(null);
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

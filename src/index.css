@@ -1,15 +1,10 @@
 @import "tailwindcss";
 
-/* #hero{
-    background-image: url(../public/img1.jpg);
+body{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-
-@media (max-width : 640px) {
-    #hero{
-        background-color: #072542;
-        background-image: none;
-    }
-} */
 
 :root{
     --primary-color: #63A8D1;
@@ -40,5 +35,5 @@
 
 /* Hover */
 ::-webkit-scrollbar-thumb:hover {
- background: #B96F1A;
+ background: var(--primary-color);
 }
