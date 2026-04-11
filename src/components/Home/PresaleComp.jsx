@@ -62,9 +62,16 @@ const PresaleComp = () => {
         registryIndex: new BN(0)  // Default
       });
 
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      depositTx.recentBlockhash = blockhash;
+      depositTx.lastValidBlockHeight = lastValidBlockHeight;
+
       console.log("Deposit Transaction Created",depositTx);
 
-      const txSig = await solWalletProvider.sendTransaction(depositTx, connection);
+      const txSig = await solWalletProvider.sendTransaction(depositTx, connection,{
+        skipPreflight: false,
+        maxRetries: 0,   // ✅ disable auto-retry — prevents the double-send
+      });
       console.log("Deposit transaction sent:", txSig);
 
       await connection.confirmTransaction(
@@ -130,7 +137,15 @@ const PresaleComp = () => {
       await Promise.all(
         claimTxs.map(async (claimTx) => {
 
-          const txSig = await solWalletProvider.sendTransaction(claimTx, connection);
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+          claimTx.recentBlockhash = blockhash;
+          claimTx.lastValidBlockHeight = lastValidBlockHeight;
+
+          const txSig = await solWalletProvider.sendTransaction(claimTx, connection,{
+            skipPreflight: false,
+            maxRetries: 0,   // ✅ disable auto-retry — prevents the double-send
+          });
+          
           console.log("Claim transaction sent:", txSig);
 
           await connection.confirmTransaction(
