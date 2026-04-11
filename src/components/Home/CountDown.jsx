@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import useTimeStore from "../../utilities/store/TimeStore";
 const TimeBlock = ({ value, label }) => {
   return (
     <div className="
@@ -36,6 +37,7 @@ const TimeBlock = ({ value, label }) => {
 
 const CountDown = ({ remainingTime = 0 }) => {
   const [time, setTime] = useState(remainingTime);
+  const { setTimeOver , timeOver } = useTimeStore();
 
   useEffect(() => {
     if (!remainingTime) return;
@@ -48,6 +50,15 @@ const CountDown = ({ remainingTime = 0 }) => {
 
     return () => clearInterval(interval);
   }, [remainingTime]);
+
+  useEffect(()=>{
+    console.log("Time : ",time);
+    console.log("Time Over : ",timeOver);
+    if(timeOver == false && time == 0 && time){
+      console.log("Update Time Over");
+      setTimeOver(true);
+    }
+  },[time]);
 
   const days = Math.floor(time / 86400);
   const hours = Math.floor((time % 86400) / 3600);

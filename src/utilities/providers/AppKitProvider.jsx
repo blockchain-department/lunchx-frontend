@@ -27,7 +27,17 @@ createAppKit({
   projectId,
   features: {
     analytics: true,
+    connectMethodsOrder: ["wallet"],
   },
+  enableReconnect: false,
+  // ✅ Hide the "All Wallets" browser completely
+  // allWallets: "ONLY_MOBILE",
+
+  // ✅ Use the real WalletConnect explorer IDs
+  featuredWalletIds: [
+    "a797aa35c0fadbfc1a53e7f675aa9a54f8ea3f71e5a2e1a70a1c87ad69b2c93", // Phantom
+    "fd4a2d4e4328f05e93ab2c66f3b7b695f68c3547cb5bc3a5a53e9f1b3e5ddb1a", // Solflare
+  ],
 });
 
 export function AppKitProvider({ children }) {

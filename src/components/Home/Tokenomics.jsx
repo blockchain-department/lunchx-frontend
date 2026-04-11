@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef , useState } from "react";
 import { PieChart, pieClasses } from "@mui/x-charts/PieChart";
 
 const Tokenomics = () => {
   const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   const distribution = [
     { label: "Liquidity and yield generation", percentage: 60, color: "#4F81BD" },

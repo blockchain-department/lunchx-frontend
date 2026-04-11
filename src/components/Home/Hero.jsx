@@ -1,16 +1,20 @@
 import { useEffect, useRef } from "react";
 import { ArrowRight } from "lucide-react";
 import CountDown from "./Countdown";
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, rpc_url } from "../../utilities/config";
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Presale } from '@meteora-ag/presale';
+import { useState } from "react";
 
 const Hero = () => {
   const containerRef = useRef(null);
+  const connection = new Connection(rpc_url, "confirmed");
+  const [timeLeft,setTimeLeft] = useState(null);
 
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
     element.scrollIntoView({ behavior: "smooth" });
   };
-
-  const secondsLeft = Math.floor((new Date("2026-04-20").getTime() - Date.now()) / 1000);
 
   const videoRef = useRef(null);
 
@@ -19,6 +23,33 @@ const Hero = () => {
       videoRef.current.playbackRate = 0.7; // 👈 slower (0.5x)
     }
   }, []);
+
+  useEffect(() => {
+    fetchClaimableAmount();
+  }, []);
+
+  const fetchClaimableAmount = async () => {
+    try {
+      const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+      );
+      const decimals = 9;
+
+      const presaleData = await presaleInstance.getParsedPresale();
+      console.log("Presale Data At Hero",presaleData.presaleAccount.presaleEndTime.toString());
+
+      const endTime = presaleData.presaleAccount.presaleEndTime.toString();
+
+      const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+      setTimeLeft(secondsLeft);
+      
+    } catch (error) {
+      console.log("Error in fetchClaimableAmount:", error);
+    }
+  }
 
   return (
     <section
@@ -82,7 +113,7 @@ const Hero = () => {
             </button>
           </div>
 
-          <CountDown remainingTime={secondsLeft} />
+          <CountDown remainingTime={timeLeft} />
         </div>
       </div>
  
