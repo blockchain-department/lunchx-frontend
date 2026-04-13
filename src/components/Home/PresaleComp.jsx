@@ -438,7 +438,7 @@ const PresaleComp = () => {
             disabled={inProgress || timeOver == true || isConnected == false}
           >
             <BanknoteArrowUp />
-            Deposit
+            {activeTab == "Deposit" ? "Deposit" : "Withdraw"}
           </button>}
           {(timeOver == true && isConnected == true) && <button 
             className={`${inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
