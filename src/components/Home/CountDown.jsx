@@ -54,7 +54,7 @@ const CountDown = ({ remainingTime = 0 }) => {
   useEffect(()=>{
     console.log("Time : ",time);
     console.log("Time Over : ",timeOver);
-    if(timeOver == false && time == 0 && time){
+    if(timeOver == false && time <= 0 && time){
       console.log("Update Time Over");
       setTimeOver(true);
     }

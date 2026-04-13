@@ -3,7 +3,7 @@ import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown } fro
 import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, rpc_url } from '../../utilities/config';
-import { Presale } from '@meteora-ag/presale';
+import { Presale, getOnChainTimestamp } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
 import useTimeStore from '../../utilities/store/TimeStore';
@@ -23,8 +23,31 @@ const PresaleComp = () => {
   const [totalDepositedSol, setTotalDepositedSol] = useState(0);
   const [inProgress,setInProgress] = useState(false);
   const { timeOver } = useTimeStore();
+  const [totalClaimableLx, setTotalClaimableLx] = useState(0);
+  const [solPrice, setSolPrice] = useState(0);
 
-  const EXCHANGE_RATE = 20238.0952380; // 1 SOL = 2900 LX (Calculated: 145 / 0.05)
+  const EXCHANGE_RATE = solPrice/0.0042;
+
+  useEffect(() => {
+      const fetchCryptoPrices = async () => {
+      try {
+          const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+          );
+          const data = await response.json();
+          setSolPrice(data.solana.usd);
+      } catch (error) {
+          console.error("Error fetching cryptocurrency prices:", error);
+      }
+      };
+      fetchCryptoPrices();
+  }, []);
 
   const depositTokens = async () => {
 
@@ -182,34 +205,46 @@ const PresaleComp = () => {
       );
       const decimals = 9;
 
+      const presaleData = await presaleInstance.getParsedPresale();
+      const presaleRegisteries = await presaleData.getAllPresaleRegistries()
+
       console.log("Presale Instance Created",presaleInstance);
 
       const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
 
       console.log("Escrows Fetched",escrows);
 
+      const onChainTimestamp = await getOnChainTimestamp(connection).then((ts) =>
+        Number(ts)
+      );
+
       let totalDepositedSol = 0;
       let totalClaimableLx = 0;
       let totalClaimedLx = 0;
+      let totalClaimableLxx = 0;
 
       for (const escrow of escrows) {
         console.log("Escrow",escrow.escrowAccount.totalDeposit.toString());
 
-        const floatValue = escrow.escrowAccount.totalDeposit.toString() / Math.pow(10, decimals);
+        // const floatValue = escrow.escrowAccount.totalDeposit.toString() / Math.pow(10, decimals);
+        const floatValue = escrow.getDepositUiAmount();
         totalDepositedSol += floatValue;
 
-        totalClaimableLx = escrow.escrowAccount.pendingClaimToken.toString() / Math.pow(10, decimals);
+        // totalClaimableLx = escrow.escrowAccount.pendingClaimToken.toString() / Math.pow(10, decimals);
+        totalClaimableLx += escrow.getPendingClaimableUiAmount(presaleData, onChainTimestamp);
         
-        totalClaimedLx = escrow.escrowAccount.totalClaimedToken.toString() / Math.pow(10, decimals);
+        // totalClaimedLx = escrow.escrowAccount.totalClaimedToken.toString() / Math.pow(10, decimals);
+        totalClaimedLx += escrow.getClaimedUiAmount();
+
+        totalClaimableLxx += escrow.getTotalClaimableUiAmount(presaleData);
 
       }
 
       setDepositedSol(totalDepositedSol);
       setClaimableLx(totalClaimableLx);
       setClaimedLx(totalClaimedLx);
+      setTotalClaimableLx(totalClaimableLxx);
 
-      const presaleData = await presaleInstance.getParsedPresale();
-      const presaleRegisteries = await presaleData.getAllPresaleRegistries()
       console.log("Presale Data",presaleData);
 
       const hardcap = presaleRegisteries[0].presaleMaximumCap.toString() / Math.pow(10, decimals);
@@ -351,10 +386,10 @@ const PresaleComp = () => {
             <BanknoteArrowUp />
             Deposit
           </button>}
-          {(timeOver == true && claimedLx == 0 && isConnected == true) && <button 
-            className={`${inProgress || timeOver == false || claimedLx > 0 || isConnected == false || depositedSol == 0 ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+          {(timeOver == true && isConnected == true) && <button 
+            className={`${inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={()=>claimTokens()}
-            disabled={inProgress || timeOver == false || claimedLx > 0 || isConnected == false || depositedSol == 0}
+            disabled={inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0}
           >
             <BanknoteArrowDown />
             Claim
@@ -368,10 +403,18 @@ const PresaleComp = () => {
             <span className="text-tertiary">Deposited SOL</span>
             <span className="text-primary text-[16px]">{depositedSol}</span>
           </div>
-          {/* <div className="flex justify-between text-primary">
-            <span className="text-tertiary">Claimable LX</span>
+          <div className="flex justify-between text-primary">
+            <span className="text-tertiary">Claimable LX (Now)</span>
             <span className="text-primary text-[16px]">{claimableLx}</span>
-          </div> */}
+          </div>
+          <div className="flex justify-between text-primary">
+            <span className="text-tertiary">Claimable LX (After 15 Days)</span>
+            <span className="text-primary text-[16px]">{claimedLx == 0 ? totalClaimableLx - claimableLx : totalClaimableLx - claimedLx}</span>
+          </div>
+          <div className="flex justify-between text-primary">
+            <span className="text-tertiary">Claimable LX (Total)</span>
+            <span className="text-primary text-[16px]">{totalClaimableLx}</span>
+          </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimed LX</span>
             <span className="text-primary text-[16px]">{claimedLx}</span>
