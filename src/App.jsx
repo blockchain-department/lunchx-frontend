@@ -2,11 +2,12 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import Home from "./pages/Home.jsx";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
-import { AppKitProvider } from './utilities/providers/AppKitProvider.jsx';
+
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/all";
 import { Toaster } from "react-hot-toast";
+import AppKitProvider from "./utilities/providers/AppKitProvider.jsx";
 
 const App = () => {
 

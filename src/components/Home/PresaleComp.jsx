@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown } from 'lucide-react';
-import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, rpc_url } from '../../utilities/config';
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from '../../utilities/config';
 import { Presale, getOnChainTimestamp } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
 import useTimeStore from '../../utilities/store/TimeStore';
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 const PresaleComp = () => {
   const [solAmount, setSolAmount] = useState('');
   const [lxAmount, setLxAmount] = useState(0);
-  const { address, isConnected } = useAppKitAccount();
-  const { open, close } = useAppKit();
+  const { publicKey , sendTransaction , connected } = useWallet();
+  const address = publicKey?.toBase58();
   const [solBalance,setSolBalance] = useState(0);
-  const connection = new Connection(rpc_url, "confirmed");
-  const { walletProvider : solWalletProvider } = useAppKitProvider("solana");
+  const { connection } = useConnection();
   const [depositedSol, setDepositedSol] = useState(0);
   const [claimableLx, setClaimableLx] = useState(0);
   const [claimedLx, setClaimedLx] = useState(0);
@@ -25,6 +24,9 @@ const PresaleComp = () => {
   const { timeOver } = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
+  const [activeTab,setActiveTab] = useState("Deposit");
+
+  const isConnected = connected;
 
   const EXCHANGE_RATE = solPrice/0.0042;
 
@@ -43,7 +45,7 @@ const PresaleComp = () => {
           const data = await response.json();
           setSolPrice(data.solana.usd);
       } catch (error) {
-          console.error("Error fetching cryptocurrency prices:", error);
+          
       }
       };
       fetchCryptoPrices();
@@ -68,7 +70,7 @@ const PresaleComp = () => {
 
     setInProgress(true);
 
-    console.log("Withdraw Tokens Called!!!");
+    
 
     try {
       const presaleInstance = await Presale.create(
@@ -77,7 +79,7 @@ const PresaleComp = () => {
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
 
-      console.log("Presale Instance Created",presaleInstance);
+      
 
       const depositTx = await presaleInstance.deposit({
         amount: new BN(parseFloat(solAmount) * 1e9),  // 0.1 SOL
@@ -88,14 +90,15 @@ const PresaleComp = () => {
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
       depositTx.recentBlockhash = blockhash;
       depositTx.lastValidBlockHeight = lastValidBlockHeight;
+      depositTx.feePayer = publicKey;
 
-      console.log("Deposit Transaction Created",depositTx);
+      
 
-      const txSig = await solWalletProvider.sendTransaction(depositTx, connection,{
-        skipPreflight: false,
-        maxRetries: 0,   // ✅ disable auto-retry — prevents the double-send
+      const txSig = await sendTransaction(depositTx, connection, {
+          skipPreflight: false,
+          maxRetries: 0,
       });
-      console.log("Deposit transaction sent:", txSig);
+      
 
       await connection.confirmTransaction(
         {
@@ -110,11 +113,11 @@ const PresaleComp = () => {
 
       setInProgress(false);
 
-      console.log("Transaction Confirmed");
+      
       toast.success("Transaction Confirmed");
       
     } catch (error) {
-      console.log("Error in withdrawTokens:", error);
+      
       toast.error("Transaction Failed");
       setInProgress(false);
     }
@@ -128,6 +131,21 @@ const PresaleComp = () => {
       return;
     }
 
+    if(solAmount <= 0 && activeTab == "Claim"){
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if(solAmount > solBalance && activeTab == "Claim"){
+      toast.error("Insufficient balance");
+      return;
+    }
+
+    if(solAmount > depositedSol && activeTab == "Claim"){
+      toast.error("Amount more than deposited");
+      return;
+    }
+
     setInProgress(true);
 
     try{
@@ -138,24 +156,36 @@ const PresaleComp = () => {
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
 
-      console.log("Presale Instance Created",presaleInstance);
+      
 
       const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
 
-      console.log("Escrows Fetched",escrows);
+      
       
 
       const claimTxs = await Promise.all(
         escrows.map((escrow) => {
           const escrowState = escrow.getEscrowAccount();
-          return presaleInstance.claim({
-            owner: escrowState.owner,
-            registryIndex: new BN(escrowState.registryIndex),
-          });
+
+          if(activeTab == "Claim"){
+            return presaleInstance.withdraw({
+              amount: new BN(parseFloat(solAmount) * 1e9),
+              owner: escrowState.owner,
+              registryIndex: new BN(escrowState.registryIndex),
+            });
+          }else{
+            return presaleInstance.claim({
+              owner: escrowState.owner,
+              registryIndex: new BN(escrowState.registryIndex),
+            });
+          }
         })
       );
 
-      console.log("Claim Transactions Created",claimTxs);
+      
+      
+
+      
 
       await Promise.all(
         claimTxs.map(async (claimTx) => {
@@ -163,13 +193,14 @@ const PresaleComp = () => {
           const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
           claimTx.recentBlockhash = blockhash;
           claimTx.lastValidBlockHeight = lastValidBlockHeight;
+          claimTx.feePayer = publicKey;
 
-          const txSig = await solWalletProvider.sendTransaction(claimTx, connection,{
-            skipPreflight: false,
-            maxRetries: 0,   // ✅ disable auto-retry — prevents the double-send
+          const txSig = await sendTransaction(claimTx, connection, {
+              skipPreflight: false,
+              maxRetries: 0,
           });
           
-          console.log("Claim transaction sent:", txSig);
+          
 
           await connection.confirmTransaction(
             {
@@ -189,7 +220,7 @@ const PresaleComp = () => {
       toast.success("Transaction Confirmed");
 
     } catch (error) {
-      console.log("Error in withdrawTokens:", error);
+      
       toast.error("Transaction Failed");
       setInProgress(false);
     }
@@ -208,11 +239,11 @@ const PresaleComp = () => {
       const presaleData = await presaleInstance.getParsedPresale();
       const presaleRegisteries = await presaleData.getAllPresaleRegistries()
 
-      console.log("Presale Instance Created",presaleInstance);
+      
 
       const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
 
-      console.log("Escrows Fetched",escrows);
+      
 
       const onChainTimestamp = await getOnChainTimestamp(connection).then((ts) =>
         Number(ts)
@@ -224,7 +255,7 @@ const PresaleComp = () => {
       let totalClaimableLxx = 0;
 
       for (const escrow of escrows) {
-        console.log("Escrow",escrow.escrowAccount.totalDeposit.toString());
+        
 
         // const floatValue = escrow.escrowAccount.totalDeposit.toString() / Math.pow(10, decimals);
         const floatValue = escrow.getDepositUiAmount();
@@ -245,7 +276,7 @@ const PresaleComp = () => {
       setClaimedLx(totalClaimedLx);
       setTotalClaimableLx(totalClaimableLxx);
 
-      console.log("Presale Data",presaleData);
+      
 
       const hardcap = presaleRegisteries[0].presaleMaximumCap.toString() / Math.pow(10, decimals);
       setHardcap(hardcap);
@@ -255,7 +286,7 @@ const PresaleComp = () => {
 
       
     } catch (error) {
-      console.log("Error in fetchClaimableAmount:", error);
+      
     }
   }
 
@@ -291,6 +322,9 @@ const PresaleComp = () => {
       setHardcap(0);
       setTotalDepositedSol(0);
     }
+    if(timeOver){
+      setActiveTab("Deposit")
+    }
   }, [isConnected,address,timeOver]);
 
   useEffect(() => {
@@ -300,8 +334,6 @@ const PresaleComp = () => {
       setLxAmount(0);
     }
   }, [solAmount]);
-
-  console.log("Time Over : ",timeOver);
   
 
   return (
@@ -328,12 +360,28 @@ const PresaleComp = () => {
           </div>
         </div>
 
+        {/* Tabs */}
+        {!timeOver && <div className="flex justify-center gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab("Deposit")}
+            className={`cursor-pointer px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === "Deposit" ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
+          >
+            Deposit
+          </button>
+          <button
+            onClick={() => setActiveTab("Claim")}
+            className={`cursor-pointer px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === "Claim" ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
+          >
+            Withdraw
+          </button>
+        </div>}
+
         {/* Input Section */}
-        <div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
+        {!timeOver && <div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
           <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
             <div className="flex justify-between text-xs mb-2">
-              <span className='text-tertiary'>You Pay</span>
-              <span className='text-tertiary'>Balance: 0.00 SOL</span>
+              <span className='text-tertiary'>You {activeTab === "Deposit" ? "Pay" : "Receive"}</span>
+              <span className='text-tertiary'>Balance: ~{solBalance.toFixed(2)} SOL</span>
             </div>
             <div className="flex items-center gap-3">
               <input
@@ -351,13 +399,13 @@ const PresaleComp = () => {
             </div>
           </div>
 
-          <div className="flex md:h-20 md:w-auto w-full items-center justify-center absolute top-[42%] left-0 md:relative">
+          <div className={`${activeTab === "Deposit" ? "flex" : "hidden"} md:h-20 md:w-auto w-full items-center justify-center absolute top-[42%] left-0 md:relative`}>
             <div className="bg-primary h-10 border border-tertiary/10 p-2 rounded-full shadow-lg transform hover:scale-110 duration-300">
               <ArrowRight size={20} className="text-tertiary rotate-90 md:rotate-0 cursor-pointer" />
             </div>
           </div>
 
-          <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl p-4 transition-all">
+          <div className={`${activeTab === "Deposit" ? "block" : "hidden"} w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl p-4 transition-all`}>
             <div className="flex justify-between text-xs ">
               <span className='text-tertiary'>You Receive</span>
             </div>
@@ -375,12 +423,18 @@ const PresaleComp = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>}
 
         <div className="flex items-center justify-center gap-2">
           {(timeOver == false && isConnected == true) && <button 
             className={`${inProgress || timeOver == true || isConnected == false ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
-            onClick={()=>depositTokens()}
+            onClick={()=>{
+              if(activeTab == "Claim"){
+                claimTokens();
+              }else{
+                depositTokens();
+              }
+            }}
             disabled={inProgress || timeOver == true || isConnected == false}
           >
             <BanknoteArrowUp />
@@ -407,10 +461,10 @@ const PresaleComp = () => {
             <span className="text-tertiary">Claimable LX (Now)</span>
             <span className="text-primary text-[16px]">{claimableLx}</span>
           </div>
-          <div className="flex justify-between text-primary">
+          {/* <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimable LX (After 15 Days)</span>
-            <span className="text-primary text-[16px]">{claimedLx == 0 ? totalClaimableLx - claimableLx : totalClaimableLx - claimedLx}</span>
-          </div>
+            <span className="text-primary text-[16px]">{totalClaimableLx == ? totalClaimableLx - claimableLx : totalClaimableLx - claimedLx}</span>
+          </div> */}
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimable LX (Total)</span>
             <span className="text-primary text-[16px]">{totalClaimableLx}</span>

@@ -5,11 +5,13 @@ import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, rpc_url } from "../../utilities/
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Presale } from '@meteora-ag/presale';
 import { useState } from "react";
+import useTimeStore from "../../utilities/store/TimeStore";
 
 const Hero = () => {
   const containerRef = useRef(null);
   const connection = new Connection(rpc_url, "confirmed");
   const [timeLeft,setTimeLeft] = useState(null);
+  const {timeOver,time,setTimeOver} = useTimeStore();
 
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
@@ -38,17 +40,61 @@ const Hero = () => {
       const decimals = 9;
 
       const presaleData = await presaleInstance.getParsedPresale();
-      console.log("Presale Data At Hero",presaleData.presaleAccount.presaleEndTime.toString());
+      
 
       const endTime = presaleData.presaleAccount.presaleEndTime.toString();
 
       const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
 
-      setTimeLeft(secondsLeft);
+      // const vestingEndTime = presaleData.presaleAccount.presaleEndTime.toString();
+
+      // const vestingSecondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+      if(secondsLeft <= 0){
+        setTimeLeft(0);
+        setTimeOver(true);
+      }else{
+        setTimeLeft(secondsLeft);
+      }
       
     } catch (error) {
-      console.log("Error in fetchClaimableAmount:", error);
+      
     }
+  }
+
+  useEffect(() => {
+    if(timeOver){
+      fetchVestingTime();
+    }
+  }, [timeOver]);
+
+  const fetchVestingTime = async() => {
+    const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+      );
+      const decimals = 9;
+
+      const presaleData = await presaleInstance.getParsedPresale();
+      
+
+      const vestingEndTime = presaleData.presaleAccount.vestingEndTime.toString();
+
+      const vestingSecondsLeft = Math.floor((vestingEndTime * 1000 - Date.now()) / 1000);
+
+      
+      
+
+      if(vestingSecondsLeft <= 0){
+        setTimeLeft(0);
+      }else{
+        if(timeOver == false){
+          
+          setTimeOver(true);
+        }
+        setTimeLeft(vestingSecondsLeft);
+      }
   }
 
   return (
@@ -112,6 +158,8 @@ const Hero = () => {
               Start Presale
             </button>
           </div>
+
+          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : time <= 0 ? "Vesting Ended" : "Vesting Ends In"}</h1>
 
           <CountDown remainingTime={timeLeft} />
         </div>

@@ -37,3 +37,11 @@ body{
 ::-webkit-scrollbar-thumb:hover {
  background: var(--primary-color);
 }
+
+.wallet-adapter-modal-wrapper {
+  background: var(--secondary-color) !important;
+}
+
+.wallet-adapter-button-trigger {
+    background-color: var(--primary-color) !important;
+}

@@ -36,29 +36,20 @@ const TimeBlock = ({ value, label }) => {
 };
 
 const CountDown = ({ remainingTime = 0 }) => {
-  const [time, setTime] = useState(remainingTime);
-  const { setTimeOver , timeOver } = useTimeStore();
+  const { tick, setTime, timeOver,time , setTimeOver } = useTimeStore();
 
   useEffect(() => {
-    if (!remainingTime) return;
 
-    setTime(remainingTime);
+      if (!remainingTime) return;
 
-    const interval = setInterval(() => {
-      setTime((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
+      setTime(remainingTime);
 
-    return () => clearInterval(interval);
+      const interval = setInterval(() => {
+          tick();
+      }, 1000);
+
+      return () => clearInterval(interval);
   }, [remainingTime]);
-
-  useEffect(()=>{
-    console.log("Time : ",time);
-    console.log("Time Over : ",timeOver);
-    if(timeOver == false && time <= 0 && time){
-      console.log("Update Time Over");
-      setTimeOver(true);
-    }
-  },[time]);
 
   const days = Math.floor(time / 86400);
   const hours = Math.floor((time % 86400) / 3600);

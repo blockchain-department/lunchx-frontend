@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  useAppKit,
-  useAppKitAccount,
-  useAppKitNetwork,
-} from "@reown/appkit/react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
-  const { open } = useAppKit();
-  const { address, isConnected } = useAppKitAccount();
+  const { publicKey , connected } = useWallet();
+  const isConnected = connected;
+  const address = publicKey?.toBase58();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -29,14 +27,6 @@ const Header = () => {
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
     element.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const connectWallet = async () => {
-    if (isConnected) {
-      open({ view: "Account" });
-    } else {
-      open({ view: "Connect", namespace: "solana" });
-    }
   };
 
   return (
@@ -98,14 +88,15 @@ const Header = () => {
           </nav>
 
           <div className="flex  items-center justify-between gap-2 ">
-            <button
+            {/* <button
               className="hover:scale-105 active:scale-95 text-secondary px-5 py-2.5 rounded-full border-none text-md font-semibold bg-primary hover:text-tertiary duration-300 transition-all hover:cursor-pointer"
               onClick={() => connectWallet()}
             >
               {isConnected
                 ? `${address.slice(0, 6)}...${address.slice(-4)}`
                 : "Connect"}
-            </button>
+            </button> */}
+            <WalletMultiButton />
           </div>
         </div>
       </div>
