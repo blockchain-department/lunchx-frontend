@@ -24,10 +24,10 @@ const Footer = () => {
           <div className="flex gap-2 text-sm text-tertiary">
             <Mail className="hover:text-primary" />
             <a
-              href="mailto: mitch@rivermindpictures.com"
+              href="mailto:admin@launchxcoin.io"
               className="hover:text-primary text-tertiary transition-colors"
             >
-              presale@launchX.com
+              admin@launchxcoin.io
             </a>
           </div>
         </div>

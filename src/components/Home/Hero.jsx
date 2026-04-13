@@ -136,7 +136,9 @@ const Hero = () => {
             className="lg:text-xl md:text-lg text-center text-tertiary mb-12 max-w-2xl animate-fade-in-up"
             style={{ animationDelay: "200ms" }}
           >
-            Own a stake in the future of the space economy. LAUNCH X Coin ($LX) combines scarcity-driven tokenomics, strategic rewards, and community alignment to create a powerful digital asset.
+            A deflationary token powered by real market activity. <br />
+            Trading volume generates yield → yield funds buybacks → buybacks permanently reduce supply.
+
           </p>
 
           <div
@@ -147,15 +149,14 @@ const Hero = () => {
 
             <button
               onClick={() => window.open("/whitepaper.pdf", "_blank")}
-              className="group cursor-pointer w-60 h-16 rounded-full font-medium text-lg hover:text-tertiary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary bg-secondary/20 text-primary hover:scale-105 active:scale-95"
+              className="group cursor-pointer w-52 h-14 rounded-full font-medium text-lg hover:text-tertiary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary bg-secondary/20 text-primary hover:scale-105 active:scale-95"
             >
-              White Paper
+              Read WhitePaper
               <ArrowRight className="w-5 h-5 mt-1.5 group-hover:translate-x-1 transition-transform" />
             </button>
 
-
-            <button onClick={() => handleScrollIntoView("#presale")} className="group cursor-pointer hover:text-white w-60 h-16 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary">
-              Start Presale
+            <button className="group cursor-pointer hover:text-white w-52 h-14 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary">
+              Join Community
             </button>
           </div>
 

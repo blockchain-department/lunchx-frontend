@@ -2,36 +2,51 @@ import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 const FAQ = () => {
-  const faqs = [
+const faqs = [
   {
-    question: "What is Launch X Coin ($LX)?",
+    question: "What is LaunchX Coin ($LX)?",
     answer:
-      "Launch X Coin ($LX) is a Solana-based token built around a scarcity-driven economy, combining structured tokenomics, presale mechanics, and long-term holder rewards.",
+      "LaunchX is a deflationary Solana token built around a system where trading activity generates yield, which funds buybacks and permanently reduces supply.",
   },
   {
     question: "How does the presale work?",
     answer:
-      "The presale is offered at $0.00420 per token, with 75% of tokens unlocked at launch and the remaining 25% released after a 15-day lock period.",
+      "The presale offers early access to $LX at $0.00420 before the public launch at $0.010. Participants receive tokens at launch and may qualify for a 15% bonus.",
   },
   {
     question: "When will I receive my tokens?",
     answer:
-      "Presale participants receive 75% of their tokens at launch, while the remaining 25% becomes claimable after the 15-day lock period ends.",
+      "Presale tokens are distributed at launch. Bonus tokens are allocated after the 30-day holding requirement is met.",
   },
   {
-    question: "What is the Genesis Drop reward?",
+    question: "How does the Buyback & Burn Engine work?",
     answer:
-      "The Genesis Drop distributes 1,000,000 tokens to eligible holders who maintain their full balance for 30 days after launch without selling.",
+      "Trading activity generates fees through liquidity. These fees are used to buy $LX on the open market, and those tokens are permanently burned.",
   },
   {
-    question: "What is the Lunar Cycle reward system?",
+    question: "How are rewards distributed?",
     answer:
-      "The Lunar Cycle distributes 1,000,000 tokens monthly for 12 months, based on holder snapshots taken before each reward cycle.",
+      "120 million tokens are distributed over 12 months through randomized snapshots. Eligibility requires maintaining your token balance and meeting holding criteria.",
   },
   {
-    question: "What happens if I sell my tokens early?",
+    question: "What are the 30-day holding requirements?",
     answer:
-      "If you sell even one token before the required holding period, you may lose eligibility for certain rewards like the Genesis Drop.",
+      "Presale participants must hold for 30 days to receive the 15% bonus. Early selling results in forfeiture and burn of the bonus tokens.",
+  },
+  {
+    question: "How is liquidity managed?",
+    answer:
+    "Liquidity is deployed through Meteora DLMM, allowing capital to concentrate around active price ranges for efficiency and yield generation.",
+  },
+  {
+    question: "Is the team allocated tokens?",
+    answer:
+    "No. There is no dedicated team token allocation. A portion of presale proceeds supports operations and long-term sustainability.",
+  },
+  {
+    question:"What risks should I understand?",
+    answer:
+    "$LX is a speculative digital asset. Risks include volatility, liquidity dynamics, and dependence on trading activity for buybacks",
   },
 ];
   const [faqToggle, setFaqToggle] = useState({
@@ -43,14 +58,14 @@ const FAQ = () => {
     5: false,
   });
 
-  console.log(faqToggle);
+  
 
   return (
     <div className="py-10 px-6 w-full flex items-center justify-center text-secondary bg-secondary">
       <div className="container flex md:flex-row flex-col items-start justify-between">
-        <div className="font-bold md:text-[48px] text-[36px] leading-10 md:w-[50%] w-full mb-2.5">
+        <div className="font-semibold md:text-[44px] text-[32px] leading-10 md:w-[50%] w-full mb-2.5">
           <h1 className="text-[0.5em] textoutline-light text-primary">FAQ</h1>
-          <h1 className="text-tertiary textoutline-light">Expecting questions, we answer</h1>
+          <h1 className="text-tertiary textoutline-light">Clear answers on token mechanics, rewards, and liquidity strategy.</h1>
         </div>
         <div className="md:w-[50%] w-full">
           {faqs.map((item, key) => {
@@ -80,9 +95,9 @@ const FAQ = () => {
                     flex-col
                     transition-all duration-1000
                     origin-top
-                    lg:text-[20px] text-[14px]
+                    lg:text-[18px] text-[12px]
                     overflow-hidden
-                    
+                    pb-1
                   `}
                 >
                   <h1>{item.answer}</h1>

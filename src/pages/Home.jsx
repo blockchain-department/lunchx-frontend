@@ -1,9 +1,9 @@
 import React from "react";
-import Hero from "../components/home/Hero";
-import About from "../components/home/About.jsx";
+import Hero from "../components/Home/Hero";
+import About from "../components/Home/About.jsx";
 import Presale from "../components/Home/PresaleComp.jsx";
-import Tokenomics from "../components/home/Tokenomics.jsx";
-import Roadmap from "../components/home/Roadmap.jsx";
+import Tokenomics from "../components/Home/Tokenomics.jsx";
+import Roadmap from "../components/Home/Roadmap.jsx";
 import FAQ from "../components/Home/FAQ.jsx";
 
 const Home = () => {
