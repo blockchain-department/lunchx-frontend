@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from '../../utilities/config';
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
 import { Presale, getOnChainTimestamp } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
@@ -453,6 +453,10 @@ const PresaleComp = () => {
         {/* Details List */}
         <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
           
+          <div className="flex justify-between text-primary">
+            <span className="text-tertiary">Network</span>
+            <span className="text-primary text-[16px]">{network.toLocaleUpperCase()}</span>
+          </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Deposited SOL</span>
             <span className="text-primary text-[16px]">{depositedSol}</span>

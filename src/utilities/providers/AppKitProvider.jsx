@@ -13,6 +13,7 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import toast from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { network } from "../config";
 
 const onError = (error) => {
   if (error?.message?.includes("User rejected")) {
@@ -24,9 +25,10 @@ const onError = (error) => {
 };
 
 export default function AppKitProvider({ children }) {
-  const network = WalletAdapterNetwork.Devnet;
 
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const networkLocal = network == "devnet" ? WalletAdapterNetwork.Devnet : WalletAdapterNetwork.Mainnet;
+
+  const endpoint = useMemo(() => clusterApiUrl(networkLocal), [networkLocal]);
 
   const wallets = useMemo(
     () => [

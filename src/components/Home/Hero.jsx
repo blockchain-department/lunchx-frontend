@@ -1,15 +1,16 @@
 import { useEffect, useRef } from "react";
 import { ArrowRight } from "lucide-react";
 import CountDown from "./Countdown";
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, rpc_url } from "../../utilities/config";
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from "../../utilities/config";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Presale } from '@meteora-ag/presale';
 import { useState } from "react";
 import useTimeStore from "../../utilities/store/TimeStore";
+import { useConnection } from "@solana/wallet-adapter-react";
 
 const Hero = () => {
   const containerRef = useRef(null);
-  const connection = new Connection(rpc_url, "confirmed");
+  const { connection } = useConnection();
   const [timeLeft,setTimeLeft] = useState(null);
   const {timeOver,time,setTimeOver} = useTimeStore();
 
