@@ -1,22 +1,25 @@
 import React from "react";
 
 const statsData = [
-  { value: "$0.00420", label: "Presale Price" },
-  { value: "$0.01", label: "Launch Price"},
-  { value: "2.7M+", label: "Reward Tokens"},
-  {value: "4.2B", label : "Total Supply"}
+  { value: "$0.00420", label: "Presale Entry" },
+  { value: "$0.010", label: "Launch Target"},
+  { value: "4.2B", label: "Fixes Supply"},
+  {value: "120M", label : "Air Drops"},
+  { value: "+15%", label: "Presale Bonus · 30D Hold" },
 ];
 
 const Stats = () => {
   return (
     <div className="w-full flex justify-center bg-secondary pt-10">
-      <div className="grid grid-cols-2 2xl:grid-cols-4 gap-12 text-center">
+      <div className="grid grid-cols-2 2xl:grid-cols-5 gap-8 place-items-center text-center">
         {statsData.map((stat, index) => (
-          <div
-            key={index}
-            className="group relative flex flex-col items-center justify-center cursor-pointer animate-fade-in-up"
-            style={{ animationDelay: stat.delay }}
-          >
+  <div
+    key={index}
+    className={`group relative flex flex-col items-center justify-center cursor-pointer animate-fade-in-up
+      ${index === statsData.length - 1 ? "col-span-2 justify-self-center" : ""}
+    `}
+    style={{ animationDelay: stat.delay }}
+  >
             
             <div className="relative flex flex-col items-center justify-center bg-secondary rounded-xl">
               <div
@@ -28,7 +31,7 @@ const Stats = () => {
               >
                 {stat.value}
               </div>
-              <div className="text-sm md:text-base text-primary font-semibold uppercase tracking-wider">
+              <div className="text-sm md:text-[12px] text-primary font-semibold uppercase tracking-wider">
                 {stat.label}
               </div>
             </div>

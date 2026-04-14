@@ -1,24 +1,24 @@
-import { DollarSign, Rocket, Gift } from "lucide-react";
+import { DollarSign, Flame, Gift } from "lucide-react";
 import Stats from "./Stats";
 const About = () => {
 
-  const features = [
-    {
-      icon: Rocket,
-      title: "Custom Solana Launch",
-      desc: "Full control over token setup, presale, liquidity, and treasury for a professional launch.",
-    },
-    {
-      icon: Gift,
-      title: "Holder Rewards",
-      desc: "Genesis Drop and Lunar Cycle reward campaigns incentivize long-term participation.",
-    },
-    {
-      icon: DollarSign,
-      title: "Structured Presale",
-      desc: "Transparent presale pricing, vesting, and allocations for fair and secure participation.",
-    },
-  ];
+const features = [
+  {
+    icon: Flame,
+    title: "Daily Buyback & Burn Engine",
+    desc: "Trading fees generated from DLMM liquidity are used for daily buybacks and permanent token burns, creating continuous deflationary pressure.",
+  },
+  {
+    icon: Gift,
+    title: "Holder Incentives",
+    desc: "Includes a 15% presale bonus for 30-day holders and monthly airdrops distributed over 12 months based on snapshot eligibility.",
+  },
+  {
+    icon: DollarSign,
+    title: "Transparent Presale",
+    desc: "Presale at $0.00420 with a clear allocation structure and bonus incentives for long-term holders.",
+  },
+];
 
   return (
     <section
@@ -37,10 +37,11 @@ const About = () => {
                 >
                   What is <span className="text-primary">LaunchX</span>?
                 </h2>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl max-w-2xl text-tertiary" id="subHeading">
-                   Launch X Coin ($LX) is a Solana-based token built around
-                   scarcity, structured tokenomics, and a strategic presale
-                   model.
+                <p className="text-base sm:text-md md:text-lg lg:text-xl max-w-2xl text-tertiary" id="subHeading">
+                   LaunchX Coin ($LX) is a Solana-based token engineered around a real economic model.
+                   Rather than relying on static liquidity or one-time events, LaunchX uses yield-generating liquidity to continuously fund buybacks and reduce circulating supply.
+                   This creates a direct connection between market activity and long-term scarcity.
+
                 </p>
               <Stats />
             </div>

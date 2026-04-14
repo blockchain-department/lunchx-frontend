@@ -7,6 +7,7 @@ import {
   Globe,
   Zap,
   Server,
+  Dot,
 } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -17,34 +18,55 @@ const Roadmap = () => {
  const phases = [
   {
     q: "Q2 26",
-    title: "Official Launch & Buyback Engine Activation",
+    title: "Launch",
     status: "upcoming",
-    desc: "Official launch on April 20 at 4:20 PM EST, activation of the Daily Buyback & Burn Engine, and deployment of the transparency dashboard.",
-    date: "April 20, 2026",
+    desc: [
+    "	Token launch at $0.010 ",
+"Initial DLMM liquidity deployment" ,
+"Activation of the Buyback & Burn Engine ",
+"Deployment of the transparency dashboard ",
+    ],
+    
+    date: "April, 2026",
     number: 1,
   },
   {
     q: "Q2 26",
-    title: "Airdrop Program & Marketing Expansion",
+    title: "Growth",
     date: "May 2026",
-    desc: "Initiation of the monthly airdrop program and expanded marketing activities.",
+    desc: [
+      "	Initiation of monthly holder “Air Drop” rewards ",
+      "	Community expansion and strategic marketing ",
+      "	Ongoing liquidity optimization and monitoring ",
+
+    ],
     status: "upcoming",
     number: 2,
   },
   {
     q: "Q2 26",
-    title: "Market Alignment & Narrative Development",
+    title: "Market Positioning ",
     date: "June 2026",
-    desc: "Alignment with anticipated SpaceX IPO-related market momentum and narrative development.",
+    desc: [
+      "	Expansion of the Digital Fuel Narrative ",
+      "	Increased market visibility and audience reach ",
+      "	Continued execution of buybacks and supply reduction ",
+
+    ],
     status: "upcoming",
     number: 3,
   },
   {
     q: "2027+",
-    title: "Supply Floor & Yield Distribution",
+    title: "Maturity ",
     status: "upcoming",
-    desc: "Achievement of the 3B supply floor and transition to yield distribution for qualifying long-term holders.",
-    date: "2027 onward",
+    desc: [
+      	"Progression toward the 3B supply target" ,
+        "Transition to long-term holder yield models",
+	      "Ongoing liquidity and treasury optimization",
+
+    ],
+    date: "2027+",
     number: 4,
   },
 ];
@@ -84,7 +106,7 @@ const Roadmap = () => {
             Roadmap
           </h2>
           <h3 className="text-tertiary text-lg mt-5">
-            From launch to growth in a phased journey.
+            A structured rollout focused on income generation, liquidity, transparency, and long-term supply reduction.
           </h3>
         </div>
         <div className="relative">
@@ -137,7 +159,7 @@ const Roadmap = () => {
                             i % 2 === 0 ? "lg:text-right" : "lg:text-left"
                           }`}
                         >
-                          <div
+                          {/* <div
                             className={`text-xs sm:text-sm mb-1 transition-colors duration-300 ${
                               phase.status === "active"
                                 ? "text-gray-400 "
@@ -145,7 +167,7 @@ const Roadmap = () => {
                             }`}
                           >
                             {phase.q}
-                          </div>
+                          </div> */}
                           <h3
                             className={`text-lg sm:text-xl  font-semibold tracking-wide transition-colors duration-300 ${
                               phase.status === "active"
@@ -165,7 +187,11 @@ const Roadmap = () => {
                                 : "text-gray-300 group-hover:text-gray-200"
                             }`}
                           >
-                            {phase.desc}
+                             {phase.desc.map((item, i) => (
+                                <span key={i} className="flex flex-row gap-1 justify-cemter items-center">
+                                  <Dot /> {item}
+                                 </span>
+                       ))}
                           </p>
                         </div>
                       </div>
