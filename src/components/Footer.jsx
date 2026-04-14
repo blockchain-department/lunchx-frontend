@@ -25,6 +25,7 @@ const Footer = () => {
             <Mail className="hover:text-primary" />
             <a
               href="mailto:admin@launchxcoin.io"
+              target="_blank"
               className="hover:text-primary text-tertiary transition-colors"
             >
               admin@launchxcoin.io
