@@ -1,4 +1,4 @@
-export const network = "mainnet";
+export const network = "devnet";
 export const rpc_url =
   network === "devnet"
     ? "https://api.devnet.solana.com"

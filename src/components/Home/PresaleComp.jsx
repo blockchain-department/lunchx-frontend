@@ -24,14 +24,19 @@ const PresaleComp = () => {
   const [inProgress,setInProgress] = useState({
     deposit:false,
     withdraw:false,
-    claim:false
+    claim:false,
+    refund:false,
   });
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver} = useTimeStore();
+  // SDK-driven permission flags — set from parsedPresale.canClaim() and per-escrow
+  // canWithdrawRemainingQuoteAmount() on every fetchClaimableAmount call.
+  const [canClaim, setCanClaim] = useState(false);
+  const [canRefund, setCanRefund] = useState(false);
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll} = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
 
-  const inProgressGlobal = inProgress.deposit || inProgress.withdraw || inProgress.claim;
+  const inProgressGlobal = inProgress.deposit || inProgress.withdraw || inProgress.claim || inProgress.refund;
 
   const isConnected = connected;
 
@@ -133,120 +138,143 @@ const PresaleComp = () => {
     
   };
 
-  const claimTokens = async () => {
+  // Partial withdrawal during Ongoing (state 1). Requires a SOL amount input.
+  // Must NOT be called after completion — use claimTokens() for state 2.
+  const withdrawPartial = async () => {
+    if (!isConnected) { toast.error("Please connect your wallet"); return; }
+    if (solAmount <= 0) { toast.error("Please enter a valid amount"); return; }
+    if (solAmount > solBalance) { toast.error("Insufficient balance"); return; }
+    if (solAmount > depositedSol) { toast.error("Amount more than deposited"); return; }
 
-    if(!isConnected){
+    setInProgress(prev => ({...prev, withdraw: true}));
+    try {
+      const presaleInstance = await Presale.create(
+        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+      );
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
+      const txs = await Promise.all(
+        escrows.map(escrow => {
+          const s = escrow.getEscrowAccount();
+          return presaleInstance.withdraw({
+            amount: new BN(parseFloat(solAmount) * 1e9),
+            owner: s.owner,
+            registryIndex: new BN(s.registryIndex),
+          });
+        })
+      );
+      await Promise.all(txs.map(async tx => {
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+        tx.recentBlockhash = blockhash; tx.lastValidBlockHeight = lastValidBlockHeight; tx.feePayer = publicKey;
+        const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 0 });
+        await connection.confirmTransaction({ signature: sig, lastValidBlockHeight: tx.lastValidBlockHeight, blockhash: tx.recentBlockhash }, "finalized");
+      }));
+      updateAllBalances();
+      setInProgress(prev => ({...prev, withdraw: false}));
+      toast.success("Transaction Confirmed");
+    } catch (error) {
+      console.log(error);
+      setInProgress(prev => ({...prev, withdraw: false}));
+    }
+  };
+
+  // Claim purchased tokens after Completed (state 2) + vestingStartTime passed (canClaim true).
+  // No amount input — claims all pending tokens across all escrows.
+  // activeTab is intentionally NOT read here; call site (Claim button) already gates on canClaim.
+  const claimTokens = async () => {
+    if (!isConnected) { toast.error("Please connect your wallet"); return; }
+
+    setInProgress(prev => ({...prev, claim: true}));
+    try {
+      const presaleInstance = await Presale.create(
+        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+      );
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
+      const txs = await Promise.all(
+        escrows.map(escrow => {
+          const s = escrow.getEscrowAccount();
+          return presaleInstance.claim({ owner: s.owner, registryIndex: new BN(s.registryIndex) });
+        })
+      );
+      await Promise.all(txs.map(async tx => {
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+        tx.recentBlockhash = blockhash; tx.lastValidBlockHeight = lastValidBlockHeight; tx.feePayer = publicKey;
+        const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 0 });
+        await connection.confirmTransaction({ signature: sig, lastValidBlockHeight: tx.lastValidBlockHeight, blockhash: tx.recentBlockhash }, "finalized");
+      }));
+      updateAllBalances();
+      setInProgress(prev => ({...prev, claim: false}));
+      toast.success("Transaction Confirmed");
+    } catch (error) {
+      console.log(error);
+      setInProgress(prev => ({...prev, claim: false}));
+    }
+  };
+
+  // Refund remaining quote tokens.
+  // Called when presale Failed (state 3) OR Completed + Prorata (canWithdrawRemainingQuote).
+  // Uses withdrawRemainingQuote(), NOT withdraw() — the latter is for partial mid-presale exits.
+  const refundTokens = async () => {
+    if (!isConnected) {
       toast.error("Please connect your wallet");
       return;
     }
 
-    if(solAmount <= 0 && activeTab == "Claim"){
-      toast.error("Please enter a valid amount");
-      return;
-    }
+    setInProgress(prev => ({...prev, refund: true}));
 
-    if(solAmount > solBalance && activeTab == "Claim"){
-      toast.error("Insufficient balance");
-      return;
-    }
-
-    if(solAmount > depositedSol && activeTab == "Claim"){
-      toast.error("Amount more than deposited");
-      return;
-    }
-
-    if(activeTab == "Claim"){
-      setInProgress(prev => ({...prev,withdraw:true}));
-    }else{
-      setInProgress(prev => ({...prev,claim:true}));
-    }
-
-    try{
-
+    try {
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
-        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+        new PublicKey(PRESALE_VAULT_PDA),
+        new PublicKey(PRESALE_PROGRAM_ID)
       );
 
-      
-
+      const parsedPresale = presaleInstance.getParsedPresale();
       const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
 
-      
-      
-
-      const claimTxs = await Promise.all(
-        escrows.map((escrow) => {
-          const escrowState = escrow.getEscrowAccount();
-
-          if(activeTab == "Claim"){
-            return presaleInstance.withdraw({
-              amount: new BN(parseFloat(solAmount) * 1e9),
+      const refundableTxs = await Promise.all(
+        escrows
+          .filter(escrow => escrow.canWithdrawRemainingQuoteAmount(parsedPresale))
+          .map(escrow => {
+            const escrowState = escrow.getEscrowAccount();
+            return presaleInstance.withdrawRemainingQuote({
               owner: escrowState.owner,
               registryIndex: new BN(escrowState.registryIndex),
             });
-          }else{
-            return presaleInstance.claim({
-              owner: escrowState.owner,
-              registryIndex: new BN(escrowState.registryIndex),
-            });
-          }
-        })
+          })
       );
 
-      
-      
-
-      
+      if (refundableTxs.length === 0) {
+        toast.error("No refundable amount available");
+        setInProgress(prev => ({...prev, refund: false}));
+        return;
+      }
 
       await Promise.all(
-        claimTxs.map(async (claimTx) => {
-
+        refundableTxs.map(async (refundTx) => {
           const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-          claimTx.recentBlockhash = blockhash;
-          claimTx.lastValidBlockHeight = lastValidBlockHeight;
-          claimTx.feePayer = publicKey;
+          refundTx.recentBlockhash = blockhash;
+          refundTx.lastValidBlockHeight = lastValidBlockHeight;
+          refundTx.feePayer = publicKey;
 
-          const txSig = await sendTransaction(claimTx, connection, {
-              skipPreflight: false,
-              maxRetries: 0,
+          const txSig = await sendTransaction(refundTx, connection, {
+            skipPreflight: false,
+            maxRetries: 0,
           });
-          
-          
 
           await connection.confirmTransaction(
-            {
-              signature: txSig,
-              lastValidBlockHeight: claimTx.lastValidBlockHeight,
-              blockhash: claimTx.recentBlockhash,
-            },
+            { signature: txSig, lastValidBlockHeight: refundTx.lastValidBlockHeight, blockhash: refundTx.recentBlockhash },
             "finalized"
           );
         })
       );
 
       updateAllBalances();
-
-      if(activeTab == "Claim"){
-        setInProgress(prev => ({...prev,withdraw:false}));
-      }else{
-        setInProgress(prev => ({...prev,claim:false}));
-      }
-
-      toast.success("Transaction Confirmed");
-
+      setInProgress(prev => ({...prev, refund: false}));
+      toast.success("Refund successful");
     } catch (error) {
       console.log(error);
-      
-      // toast.error("Transaction Failed");
-      if(activeTab == "Claim"){
-        setInProgress(prev => ({...prev,withdraw:false}));
-      }else{
-        setInProgress(prev => ({...prev,claim:false}));
-      }
+      setInProgress(prev => ({...prev, refund: false}));
     }
-    
   };
 
   const fetchClaimableAmount = async () => {
@@ -294,30 +322,27 @@ const PresaleComp = () => {
 
       }
 
-      let presaleState = presaleData.getPresaleProgressState();
+      const presaleState = presaleData.getPresaleProgressState();
+      setPresaleProgress(presaleState);
 
-        if(presaleState == 3){
-          setActiveTab("Claim")
-        }
+      // Derive claim/refund eligibility directly from SDK helpers rather than
+      // guessing from raw state numbers.
+      // canClaim(): state === Completed (2) AND currentTime >= vestingStartTime
+      setCanClaim(presaleData.canClaim());
+      // canWithdrawRemainingQuote(): Failed (3) OR (Completed (2) AND Prorata mode)
+      // Per-escrow guard: isRemainingQuoteWithdrawn must be 0
+      const presaleAllowsRefund = presaleData.canWithdrawRemainingQuote();
+      const userHasRefundableEscrow = escrows.some(
+        escrow => escrow.canWithdrawRemainingQuoteAmount(presaleData)
+      );
+      setCanRefund(presaleAllowsRefund && userHasRefundableEscrow);
 
-        setPresaleProgress(presaleState);
-
-        const endTime = presaleData.presaleAccount.presaleEndTime.toString();
-        const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
-
-        console.log("Seconds Left : ",secondsLeft);
-        console.log("Presale State : ",presaleState);
-
-        if(secondsLeft <= 0 && presaleState == 0){
-          updateAll();
-        }
-        if(presaleState == 2){
-          setTimeOver(true);
-        }
-        if(presaleState == 3){
-          setTimeOver(true);
-          setVestingOver(true);
-        }
+      // Presale has ended when Completed (2) or Failed (3)
+      if (presaleState === 2 || presaleState === 3) {
+        setTimeOver(true);
+      }
+      // Note: state 3 is Failed (minimum cap not reached), not "vesting over".
+      // Do not call setVestingOver here — vesting only applies to Completed presales.
 
       setDepositedSol(totalDepositedSol);
       setClaimableLx(totalClaimableLx);
@@ -421,15 +446,28 @@ const PresaleComp = () => {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* State banners */}
+        {presaleProgress === 0 && (
+          <div className="mb-6 bg-tertiary/10 border border-tertiary/20 rounded-xl p-4 text-center text-tertiary/60 text-sm">
+            Presale has not started yet.
+          </div>
+        )}
+        {presaleProgress === 3 && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center text-sm">
+            <span className="text-red-400 font-semibold">Presale Failed</span>
+            <span className="text-tertiary/60"> — minimum cap was not reached. Your full deposit is available for refund.</span>
+          </div>
+        )}
+
+        {/* Tabs — only visible during Ongoing (state 1) */}
         <div className="flex justify-center gap-4 mb-8">
-          {(presaleProgress != 2 && presaleProgress != 3) && <button
+          {presaleProgress === 1 && <button
             onClick={() => setActiveTab("Deposit")}
             className={`cursor-pointer px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === "Deposit" ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
           >
             Deposit
           </button>}
-          {(presaleProgress != 2) && <button
+          {presaleProgress === 1 && <button
             onClick={() => setActiveTab("Claim")}
             className={`cursor-pointer px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === "Claim" ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
           >
@@ -437,8 +475,8 @@ const PresaleComp = () => {
           </button>}
         </div>
 
-        {/* Input Section */}
-        {( presaleProgress != 2) && <div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
+        {/* Input Section — only during Ongoing (state 1); refund/claim need no amount input */}
+        {presaleProgress === 1 && <div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
            <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
             <div className="flex justify-between text-xs mb-2">
               <span className='text-tertiary'>You {activeTab === "Deposit" ? "Pay" : "Receive"}</span>
@@ -487,39 +525,45 @@ const PresaleComp = () => {
         </div>}
 
         <div className="flex items-center justify-center gap-2">
-          {(isConnected == true && presaleProgress != 2 && presaleProgress != 3) && <button 
-            className={`${inProgress.deposit || isConnected == false || inProgressGlobal  ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
-            onClick={()=>{
-              depositTokens();
-            }}
-            disabled={inProgress.deposit || isConnected == false || presaleProgress == 2 || presaleProgress == 3 || inProgressGlobal}
+          {/* Deposit — Ongoing (state 1) only */}
+          {(isConnected && presaleProgress === 1) && <button
+            className={`${inProgress.deposit || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            onClick={() => depositTokens()}
+            disabled={inProgress.deposit || inProgressGlobal}
           >
             {inProgress.deposit ? <Loader2 className="animate-spin" /> : <BanknoteArrowUp />}
-            {`${inProgress.deposit ? "Depositing" : "Deposit"}`}
+            {inProgress.deposit ? "Depositing" : "Deposit"}
           </button>}
 
-          {(isConnected == true && presaleProgress != 2) && <button 
-            className={`${inProgress.withdraw || isConnected == false || presaleProgress == 2 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
-            onClick={()=>{
-              if(presaleProgress == 3 && depositedSol == 0){
-                toast.error("You have no deposited tokens to withdraw");
-                return;
-              }
-              claimTokens();
-            }}
-            disabled={inProgress.withdraw || isConnected == false || presaleProgress == 2 || inProgressGlobal}
+          {/* Partial withdraw — Ongoing (state 1) only */}
+          {(isConnected && presaleProgress === 1) && <button
+            className={`${inProgress.withdraw || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            onClick={() => withdrawPartial()}
+            disabled={inProgress.withdraw || inProgressGlobal}
           >
             {inProgress.withdraw ? <Loader2 className="animate-spin" /> : <BanknoteArrowUp />}
-            {`${inProgress.withdraw ? "Withdraw In Progress" : "Withdraw"}`}
+            {inProgress.withdraw ? "Withdrawing..." : "Withdraw"}
           </button>}
 
-          {(presaleProgress == 2 && isConnected == true) && <button 
-            className={`${inProgress.claim || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
-            onClick={()=>claimTokens()}
-            disabled={inProgress.claim || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 || inProgressGlobal}
+          {/* Claim tokens — Completed (state 2), gated by canClaim() which checks vestingStartTime */}
+          {(isConnected && presaleProgress === 2 && canClaim) && <button
+            className={`${inProgress.claim || claimableLx === 0 || depositedSol === 0 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            onClick={() => claimTokens()}
+            disabled={inProgress.claim || claimableLx === 0 || depositedSol === 0 || inProgressGlobal}
           >
             {inProgress.claim ? <Loader2 className="animate-spin" /> : <BanknoteArrowDown />}
-            {inProgress.claim ? "Claiming" : "Claim"}
+            {inProgress.claim ? "Claiming..." : "Claim"}
+          </button>}
+
+          {/* Refund — Failed (state 3) OR Completed + Prorata (canWithdrawRemainingQuote).
+              Uses withdrawRemainingQuote(), returns full deposit + fees. No amount input needed. */}
+          {(isConnected && canRefund) && <button
+            className={`${inProgress.refund || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            onClick={() => refundTokens()}
+            disabled={inProgress.refund || inProgressGlobal}
+          >
+            {inProgress.refund ? <Loader2 className="animate-spin" /> : <BanknoteArrowDown />}
+            {inProgress.refund ? "Refunding..." : "Refund"}
           </button>}
         </div>
 
