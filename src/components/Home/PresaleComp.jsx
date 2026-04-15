@@ -26,7 +26,7 @@ const PresaleComp = () => {
     withdraw:false,
     claim:false
   });
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress } = useTimeStore();
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver} = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
@@ -292,16 +292,32 @@ const PresaleComp = () => {
 
         totalClaimableLxx += escrow.getTotalClaimableUiAmount(presaleData);
 
-        let presaleState = presaleData.getPresaleProgressState();
+      }
+
+      let presaleState = presaleData.getPresaleProgressState();
 
         if(presaleState == 3){
           setActiveTab("Claim")
         }
 
         setPresaleProgress(presaleState);
-        
 
-      }
+        const endTime = presaleData.presaleAccount.presaleEndTime.toString();
+        const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+        console.log("Seconds Left : ",secondsLeft);
+        console.log("Presale State : ",presaleState);
+
+        if(secondsLeft <= 0 && presaleState == 0){
+          updateAll();
+        }
+        if(presaleState == 2){
+          setTimeOver(true);
+        }
+        if(presaleState == 3){
+          setTimeOver(true);
+          setVestingOver(true);
+        }
 
       setDepositedSol(totalDepositedSol);
       setClaimableLx(totalClaimableLx);
@@ -318,15 +334,8 @@ const PresaleComp = () => {
 
       
     } catch (error) {
+      console.log(error);
       
-    }
-  }
-
-  const handleConnect = () => {
-    if (isConnected) {
-      open({ view: "Account" });
-    } else {
-      open({ view: "Connect", namespace: "solana" });
     }
   }
 
@@ -376,6 +385,12 @@ const PresaleComp = () => {
     }
   }, [solAmount]);
   
+  console.log(
+    "timeOver",timeOver,
+    "vestingOver",vestingOver,
+    "presaleProgress",presaleProgress,
+  );
+  
 
   return (
     <div id='presale' className="py-20 bg-secondary text-tertiary flex items-center justify-center p-6 font-sans">
@@ -418,8 +433,8 @@ const PresaleComp = () => {
         </div>
 
         {/* Input Section */}
-        {<div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
-          <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
+        {( presaleProgress != 2) && <div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
+           <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
             <div className="flex justify-between text-xs mb-2">
               <span className='text-tertiary'>You {activeTab === "Deposit" ? "Pay" : "Receive"}</span>
               <span className='text-tertiary'>Balance: ~{solBalance.toFixed(2)} SOL</span>
