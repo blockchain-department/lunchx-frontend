@@ -58,7 +58,7 @@ const features = [
           <div className="grid md:grid-cols-2 grid-cols-1 gap-4 md:max-w-[50%] w-full">
             {features.map((feature, i) => (
               <div className="relative w-full">
-                <div className="absolute top-0 left-0 md:w-15 md:h-25 w-[15%] h-[50%] rounded-tl-full rotate-180 bg-secondary z-1"></div>
+                <div className="absolute top-0 left-0 md:w-15 md:h-25 w-18 h-25 rounded-tl-full rotate-180 bg-secondary z-1"></div>
                 <p className="absolute top-0 left-[2%] z-2 text-primary text-7xl font-semibold mb-10">{i+1}</p>
                 <div
                   key={i}

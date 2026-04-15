@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown } from 'lucide-react';
+import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
 import { Presale, getOnChainTimestamp } from '@meteora-ag/presale';
@@ -7,6 +7,7 @@ import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
 import useTimeStore from '../../utilities/store/TimeStore';
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 const PresaleComp = () => {
   const [solAmount, setSolAmount] = useState('');
@@ -21,10 +22,11 @@ const PresaleComp = () => {
   const [hardcap, setHardcap] = useState(0);
   const [totalDepositedSol, setTotalDepositedSol] = useState(0);
   const [inProgress,setInProgress] = useState(false);
-  const { timeOver } = useTimeStore();
+  const { timeOver , vestingOver } = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
+  const [presaleProgress,setPresaleProgress] = useState(null);
 
   const isConnected = connected;
 
@@ -112,6 +114,8 @@ const PresaleComp = () => {
       updateAllBalances();
 
       setInProgress(false);
+
+      setSolBalance(0);
 
       
       toast.success("Transaction Confirmed");
@@ -237,6 +241,7 @@ const PresaleComp = () => {
       const decimals = 9;
 
       const presaleData = await presaleInstance.getParsedPresale();
+      console.log("Presale Data : ",presaleData);
       const presaleRegisteries = await presaleData.getAllPresaleRegistries()
 
       
@@ -268,6 +273,15 @@ const PresaleComp = () => {
         totalClaimedLx += escrow.getClaimedUiAmount();
 
         totalClaimableLxx += escrow.getTotalClaimableUiAmount(presaleData);
+
+        let presaleState = presaleData.getPresaleProgressState();
+
+        if(presaleState == 2){
+          setActiveTab("Claim")
+        }
+
+        setPresaleProgress(presaleState);
+        
 
       }
 
@@ -322,10 +336,7 @@ const PresaleComp = () => {
       setHardcap(0);
       setTotalDepositedSol(0);
     }
-    if(timeOver){
-      setActiveTab("Deposit")
-    }
-  }, [isConnected,address,timeOver]);
+  }, [isConnected,address,timeOver,vestingOver]);
 
   useEffect(() => {
     if (solAmount > 0 && solAmount <= solBalance) {
@@ -361,23 +372,23 @@ const PresaleComp = () => {
         </div>
 
         {/* Tabs */}
-        {!timeOver && <div className="flex justify-center gap-4 mb-8">
-          <button
+        <div className="flex justify-center gap-4 mb-8">
+          {(presaleProgress != 2 && presaleProgress != 3) && <button
             onClick={() => setActiveTab("Deposit")}
             className={`cursor-pointer px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === "Deposit" ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
           >
             Deposit
-          </button>
-          <button
+          </button>}
+          {(presaleProgress != 2) && <button
             onClick={() => setActiveTab("Claim")}
             className={`cursor-pointer px-6 py-2 rounded-lg font-semibold transition-all ${activeTab === "Claim" ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
           >
             Withdraw
-          </button>
-        </div>}
+          </button>}
+        </div>
 
         {/* Input Section */}
-        {!timeOver && <div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
+        {<div className="relative space-y-4 flex md:flex-row flex-col justify-center items-center gap-2">
           <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
             <div className="flex justify-between text-xs mb-2">
               <span className='text-tertiary'>You {activeTab === "Deposit" ? "Pay" : "Receive"}</span>
@@ -427,7 +438,7 @@ const PresaleComp = () => {
 
         <div className="flex items-center justify-center gap-2">
           {(timeOver == false && isConnected == true) && <button 
-            className={`${inProgress || timeOver == true || isConnected == false ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            className={`${inProgress || timeOver == true || isConnected == false ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={()=>{
               if(activeTab == "Claim"){
                 claimTokens();
@@ -437,16 +448,16 @@ const PresaleComp = () => {
             }}
             disabled={inProgress || timeOver == true || isConnected == false}
           >
-            <BanknoteArrowUp />
-            {activeTab == "Deposit" ? "Deposit" : "Withdraw"}
+            {inProgress ? <Loader2 className="animate-spin" /> : <BanknoteArrowUp />}
+            {activeTab == "Deposit" ? `${inProgress ? "Depositing" : "Deposit"}` : `${inProgress ? "Withdraw In Progress" : "Withdraw"}`}
           </button>}
           {(timeOver == true && isConnected == true) && <button 
-            className={`${inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            className={`${inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={()=>claimTokens()}
             disabled={inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0}
           >
-            <BanknoteArrowDown />
-            Claim
+            {inProgress ? <Loader2 className="animate-spin" /> : <BanknoteArrowDown />}
+            {inProgress ? "Claiming" : "Claim"}
           </button>}
         </div>
 
@@ -456,6 +467,10 @@ const PresaleComp = () => {
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Network</span>
             <span className="text-primary text-[16px]">{network.toLocaleUpperCase()}</span>
+          </div>
+          <div className="flex justify-between text-primary">
+            <span className="text-tertiary">Vault Address</span>
+            <span className="text-primary text-[16px]">{PRESALE_VAULT_PDA}</span>
           </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Deposited SOL</span>
@@ -477,7 +492,9 @@ const PresaleComp = () => {
             <span className="text-tertiary">Claimed LX</span>
             <span className="text-primary text-[16px]">{claimedLx}</span>
           </div>
-          
+        </div>
+
+        <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
           <div className="flex justify-between text-tertiary">
             <span>Total Deposited</span>
             <span className="text-tertiary/80">{totalDepositedSol}</span>
@@ -497,13 +514,16 @@ const PresaleComp = () => {
         </div>
 
         {/* Action Button */}
-        <button 
+        {/* <button 
             className="cursor-pointer w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-103 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
             onClick={()=>handleConnect()}
         >
           <Wallet size={20} />
           {isConnected ? `${solBalance.toFixed(2)} SOL` : "Connect Wallet"}
-        </button>
+        </button> */}
+        <div className='w-full flex items-center justify-center mt-5'>
+          <WalletMultiButton />
+        </div>
 
         {/* Footer Info */}
         <div className="mt-6 flex items-start gap-2 text-[13px] text-white leading-relaxed uppercase tracking-widest text-center justify-center">

@@ -7,7 +7,7 @@ body{
 }
 
 :root{
-    --primary-color: #63A8D1;
+    --primary-color: #2796F8;
     --secondary-color: #000000;
     --tertiary-color: #FFFFFF;
 }
@@ -44,4 +44,5 @@ body{
 
 .wallet-adapter-button-trigger {
     background-color: var(--primary-color) !important;
+    border-radius: 50px !important;
 }

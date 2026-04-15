@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import CountDown from "./Countdown";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from "../../utilities/config";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -153,11 +153,18 @@ const Hero = () => {
               className="group cursor-pointer w-52 h-14 rounded-full font-medium text-lg hover:text-tertiary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary bg-secondary/20 text-primary hover:scale-105 active:scale-95"
             >
               Read WhitePaper
-              <ArrowRight className="w-5 h-5 mt-1.5 group-hover:translate-x-1 transition-transform" />
             </button>
 
-            <button className="group cursor-pointer hover:text-white w-52 h-14 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary">
+            <button className="group cursor-pointer hover:text-white w-52 h-14 bg-primary hover:scale-105 active:scale-95 rounded-full font-medium text-lg text-secondary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary"
+              onClick={()=>{window.open("https://x.com/bobfraser922","_blank")}}
+            >
               Join Community
+            </button>
+            <button
+              onClick={() => handleScrollIntoView("#tokenomics")}
+              className="group cursor-pointer w-52 h-14 rounded-full font-medium text-lg hover:text-tertiary transition-all inline-flex items-center justify-center gap-2 border-2 border-primary bg-secondary/20 text-primary hover:scale-105 active:scale-95"
+            >
+              Tokenomics
             </button>
           </div>
 
