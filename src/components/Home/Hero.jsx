@@ -12,7 +12,7 @@ const Hero = () => {
   const containerRef = useRef(null);
   const { connection } = useConnection();
   const [timeLeft,setTimeLeft] = useState(null);
-  const {timeOver,time,setTimeOver} = useTimeStore();
+  const {timeOver,time,setTimeOver,setVestingOver,presaleProgress} = useTimeStore();
 
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
@@ -64,12 +64,20 @@ const Hero = () => {
   }
 
   useEffect(() => {
+    if(timeOver && presaleProgress == 2){
+      setVestingOver(true);
+      setTime(0);
+      return;
+    }
+    
     if(timeOver){
       fetchVestingTime();
     }
   }, [timeOver]);
 
   const fetchVestingTime = async() => {
+    console.log("Vesting time fetched");
+    
     const presaleInstance = await Presale.create(
         connection,
         new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
@@ -88,6 +96,7 @@ const Hero = () => {
       
 
       if(vestingSecondsLeft <= 0){
+        setVestingOver(true);
         setTimeLeft(0);
       }else{
         if(timeOver == false){

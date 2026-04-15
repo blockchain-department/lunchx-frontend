@@ -21,12 +21,17 @@ const PresaleComp = () => {
   const [claimedLx, setClaimedLx] = useState(0);
   const [hardcap, setHardcap] = useState(0);
   const [totalDepositedSol, setTotalDepositedSol] = useState(0);
-  const [inProgress,setInProgress] = useState(false);
-  const { timeOver , vestingOver } = useTimeStore();
+  const [inProgress,setInProgress] = useState({
+    deposit:false,
+    withdraw:false,
+    claim:false
+  });
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress } = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
-  const [presaleProgress,setPresaleProgress] = useState(null);
+
+  const inProgressGlobal = inProgress.deposit || inProgress.withdraw || inProgress.claim;
 
   const isConnected = connected;
 
@@ -47,7 +52,7 @@ const PresaleComp = () => {
           const data = await response.json();
           setSolPrice(data.solana.usd);
       } catch (error) {
-          
+          setSolPrice(84);
       }
       };
       fetchCryptoPrices();
@@ -70,7 +75,7 @@ const PresaleComp = () => {
       return;
     }
 
-    setInProgress(true);
+    setInProgress(prev => ({...prev,deposit:true}));
 
     
 
@@ -113,17 +118,17 @@ const PresaleComp = () => {
 
       updateAllBalances();
 
-      setInProgress(false);
+      setInProgress(prev => ({...prev,deposit:false}));
 
-      setSolBalance(0);
+      setSolAmount(0);
 
       
       toast.success("Transaction Confirmed");
       
     } catch (error) {
       
-      toast.error("Transaction Failed");
-      setInProgress(false);
+      // toast.error("Transaction Failed");
+      setInProgress(prev => ({...prev,deposit:false}));
     }
     
   };
@@ -150,7 +155,11 @@ const PresaleComp = () => {
       return;
     }
 
-    setInProgress(true);
+    if(activeTab == "Claim"){
+      setInProgress(prev => ({...prev,withdraw:true}));
+    }else{
+      setInProgress(prev => ({...prev,claim:true}));
+    }
 
     try{
 
@@ -219,14 +228,23 @@ const PresaleComp = () => {
 
       updateAllBalances();
 
-      setInProgress(false);
+      if(activeTab == "Claim"){
+        setInProgress(prev => ({...prev,withdraw:false}));
+      }else{
+        setInProgress(prev => ({...prev,claim:false}));
+      }
 
       toast.success("Transaction Confirmed");
 
     } catch (error) {
+      console.log(error);
       
-      toast.error("Transaction Failed");
-      setInProgress(false);
+      // toast.error("Transaction Failed");
+      if(activeTab == "Claim"){
+        setInProgress(prev => ({...prev,withdraw:false}));
+      }else{
+        setInProgress(prev => ({...prev,claim:false}));
+      }
     }
     
   };
@@ -276,7 +294,7 @@ const PresaleComp = () => {
 
         let presaleState = presaleData.getPresaleProgressState();
 
-        if(presaleState == 2){
+        if(presaleState == 3){
           setActiveTab("Claim")
         }
 
@@ -336,7 +354,19 @@ const PresaleComp = () => {
       setHardcap(0);
       setTotalDepositedSol(0);
     }
-  }, [isConnected,address,timeOver,vestingOver]);
+  }, [isConnected,address]);
+  
+  useEffect(() => {
+
+    if(timeOver && vestingOver == false){
+      updateAllBalances(); 
+    }
+    if(timeOver == true && vestingOver == true){
+      updateAllBalances();
+    }
+  }, [timeOver,vestingOver]);
+
+  
 
   useEffect(() => {
     if (solAmount > 0 && solAmount <= solBalance) {
@@ -437,27 +467,39 @@ const PresaleComp = () => {
         </div>}
 
         <div className="flex items-center justify-center gap-2">
-          {(timeOver == false && isConnected == true) && <button 
-            className={`${inProgress || timeOver == true || isConnected == false ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+          {(isConnected == true && presaleProgress != 2 && presaleProgress != 3) && <button 
+            className={`${inProgress.deposit || isConnected == false || inProgressGlobal  ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={()=>{
-              if(activeTab == "Claim"){
-                claimTokens();
-              }else{
-                depositTokens();
-              }
+              depositTokens();
             }}
-            disabled={inProgress || timeOver == true || isConnected == false}
+            disabled={inProgress.deposit || isConnected == false || presaleProgress == 2 || presaleProgress == 3 || inProgressGlobal}
           >
-            {inProgress ? <Loader2 className="animate-spin" /> : <BanknoteArrowUp />}
-            {activeTab == "Deposit" ? `${inProgress ? "Depositing" : "Deposit"}` : `${inProgress ? "Withdraw In Progress" : "Withdraw"}`}
+            {inProgress.deposit ? <Loader2 className="animate-spin" /> : <BanknoteArrowUp />}
+            {`${inProgress.deposit ? "Depositing" : "Deposit"}`}
           </button>}
-          {(timeOver == true && isConnected == true) && <button 
-            className={`${inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
-            onClick={()=>claimTokens()}
-            disabled={inProgress || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0}
+
+          {(isConnected == true && presaleProgress != 2) && <button 
+            className={`${inProgress.withdraw || isConnected == false || presaleProgress == 2 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            onClick={()=>{
+              if(presaleProgress == 3 && depositedSol == 0){
+                toast.error("You have no deposited tokens to withdraw");
+                return;
+              }
+              claimTokens();
+            }}
+            disabled={inProgress.withdraw || isConnected == false || presaleProgress == 2 || inProgressGlobal}
           >
-            {inProgress ? <Loader2 className="animate-spin" /> : <BanknoteArrowDown />}
-            {inProgress ? "Claiming" : "Claim"}
+            {inProgress.withdraw ? <Loader2 className="animate-spin" /> : <BanknoteArrowUp />}
+            {`${inProgress.withdraw ? "Withdraw In Progress" : "Withdraw"}`}
+          </button>}
+
+          {(presaleProgress == 2 && isConnected == true) && <button 
+            className={`${inProgress.claim || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
+            onClick={()=>claimTokens()}
+            disabled={inProgress.claim || timeOver == false || claimableLx == 0 || isConnected == false || depositedSol == 0 || inProgressGlobal}
+          >
+            {inProgress.claim ? <Loader2 className="animate-spin" /> : <BanknoteArrowDown />}
+            {inProgress.claim ? "Claiming" : "Claim"}
           </button>}
         </div>
 
