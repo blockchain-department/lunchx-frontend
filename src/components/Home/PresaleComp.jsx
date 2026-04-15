@@ -340,9 +340,14 @@ const PresaleComp = () => {
   }
 
   async function getSolBalance() {
+    try{
     const pubkey = new PublicKey(address);
     const lamports = await connection.getBalance(pubkey);
     return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
+    }catch(error){
+      console.log(error);
+      return 0;
+    }
   }
 
   const updateAllBalances = () => {
