@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey, Keypair } from '@solana/web3.js';
+import { PublicKey, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
+import {
+  TOKEN_2022_PROGRAM_ID,
+  ExtensionType,
+  getMintLen,
+  createInitializeMetadataPointerInstruction,
+  createInitializeMintInstruction,
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountInstruction,
+  createMintToInstruction,
+  createSetAuthorityInstruction,
+  AuthorityType,
+} from '@solana/spl-token';
+import {
+  createInitializeInstruction as createMetadataInitInstruction,
+  pack as packMetadata,
+} from '@solana/spl-token-metadata';
 import { Presale } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
@@ -9,8 +25,9 @@ import {
   Loader2, ShieldCheck, BarChart3, Settings, PlusCircle,
   Download, Coins, Users, TrendingUp, Lock, Flame,
   RotateCcw, DollarSign, AlertCircle, Copy, CheckCircle2, RefreshCw,
+  PackagePlus, Zap, XCircle, Circle, MinusCircle,
 } from 'lucide-react';
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from '../utilities/config';
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, TOKEN_METADATA_URI } from '../utilities/config';
 
 const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 
@@ -34,6 +51,26 @@ const cls = {
   input: 'w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors placeholder:text-tertiary/40',
   label: 'block text-xs text-tertiary/60 mb-1.5',
   card: 'bg-tertiary/5 border border-tertiary/10 rounded-2xl p-6',
+};
+
+// TLV overhead used when computing Token-2022 metadata account space.
+// TYPE_SIZE (2) + LENGTH_SIZE (4) — not exported by @solana/spl-token-metadata v0.1.x.
+const METADATA_TLV_OVERHEAD = 6;
+
+// Step status: 'idle' | 'pending' | 'done' | 'error' | 'skipped'
+const INITIAL_DEPLOY_STEPS = [
+  { id: 'mint',   label: 'Create mint + embed metadata on-chain' },
+  { id: 'supply', label: 'Create token account & mint full supply'  },
+  { id: 'revoke', label: 'Disable mint authority (fixed supply)'    },
+];
+
+const INITIAL_TOKEN_FORM = {
+  tokenName:   'LaunchX Coin',
+  tokenSymbol: 'LX',
+  metadataUri: TOKEN_METADATA_URI,
+  mintSupply:  '4200000000',
+  decimals:    '9',
+  revokeMint:  true,
 };
 
 const INITIAL_FORM = {
@@ -133,6 +170,14 @@ const Admin = () => {
   });
 
   const [form, setForm] = useState(INITIAL_FORM);
+
+  // ── Token deploy state ──────────────────────────────────────────────────────
+  const [tokenForm, setTokenForm]     = useState(INITIAL_TOKEN_FORM);
+  const [deploySteps, setDeploySteps] = useState(
+    INITIAL_DEPLOY_STEPS.map(s => ({ ...s, status: 'idle' }))
+  );
+  const [deployedMint, setDeployedMint] = useState('');
+  const [isDeploying,  setIsDeploying]  = useState(false);
 
   const inProgressAny = Object.values(inProgress).some(Boolean);
 
@@ -299,6 +344,164 @@ const Admin = () => {
     }
   };
 
+  // ── Deploy Token (Token-2022 + on-chain metadata) ──────────────────────────
+
+  /** Mark a single step by id; leave others unchanged. */
+  const setStepStatus = (id, status) =>
+    setDeploySteps(prev => prev.map(s => (s.id === id ? { ...s, status } : s)));
+
+  const handleDeployToken = async () => {
+    const { tokenName, tokenSymbol, metadataUri, mintSupply, decimals, revokeMint } = tokenForm;
+
+    if (!tokenName.trim() || !tokenSymbol.trim() || !mintSupply) {
+      toast.error('Name, symbol, and supply are required');
+      return;
+    }
+    if (parseFloat(mintSupply) <= 0) {
+      toast.error('Supply must be greater than 0');
+      return;
+    }
+
+    setIsDeploying(true);
+    setDeployedMint('');
+
+    // Reset steps — mark revoke as skipped upfront if not requested
+    setDeploySteps(INITIAL_DEPLOY_STEPS.map(s => ({
+      ...s,
+      status: s.id === 'mint' ? 'pending'
+            : s.id === 'revoke' && !revokeMint ? 'skipped'
+            : 'idle',
+    })));
+
+    const mintKeypair = Keypair.generate();
+    const dec         = parseInt(decimals || '9');
+
+    try {
+      // ── Tx 1: Create mint account with MetadataPointer extension + embed metadata ──
+      //
+      // Space layout (Token-2022 TLV encoding):
+      //   mintLen               → base mint + MetadataPointer extension header
+      //   METADATA_TLV_OVERHEAD → 2-byte type + 4-byte length prefix for the metadata blob
+      //   pack(metadata).length → serialised TokenMetadata fields
+      //
+      // All four instructions must be in this exact order within one transaction:
+      //   1. SystemProgram.createAccount   (allocate + fund)
+      //   2. createInitializeMetadataPointerInstruction  (BEFORE initMint)
+      //   3. createInitializeMintInstruction
+      //   4. createMetadataInitInstruction (embed name/symbol/uri)
+      const metadata = {
+        mint:               mintKeypair.publicKey,
+        name:               tokenName.trim(),
+        symbol:             tokenSymbol.trim().toUpperCase(),
+        uri:                metadataUri.trim(),
+        additionalMetadata: [],
+      };
+
+      const mintLen      = getMintLen([ExtensionType.MetadataPointer]);
+      const metadataLen  = METADATA_TLV_OVERHEAD + packMetadata(metadata).length;
+      const lamports     = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
+
+      const tx1 = new Transaction().add(
+        SystemProgram.createAccount({
+          fromPubkey:       publicKey,
+          newAccountPubkey: mintKeypair.publicKey,
+          space:            mintLen + metadataLen,
+          lamports,
+          programId:        TOKEN_2022_PROGRAM_ID,
+        }),
+        // MetadataPointer points to the mint itself (self-referential)
+        createInitializeMetadataPointerInstruction(
+          mintKeypair.publicKey,
+          publicKey,
+          mintKeypair.publicKey,
+          TOKEN_2022_PROGRAM_ID,
+        ),
+        createInitializeMintInstruction(
+          mintKeypair.publicKey,
+          dec,
+          publicKey,
+          null,               // freeze authority — null = disabled
+          TOKEN_2022_PROGRAM_ID,
+        ),
+        createMetadataInitInstruction({
+          programId:       TOKEN_2022_PROGRAM_ID,
+          metadata:        mintKeypair.publicKey,
+          updateAuthority: publicKey,
+          mint:            mintKeypair.publicKey,
+          mintAuthority:   publicKey,
+          name:            metadata.name,
+          symbol:          metadata.symbol,
+          uri:             metadata.uri,
+        }),
+      );
+
+      await sendTx(tx1, [mintKeypair]);
+      setStepStatus('mint', 'done');
+      setStepStatus('supply', 'pending');
+
+      // ── Tx 2: Create ATA + mint full supply ────────────────────────────────
+      const ata = getAssociatedTokenAddressSync(
+        mintKeypair.publicKey,
+        publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID,
+      );
+
+      // Use BigInt to safely handle supplies that overflow JS safe-integer range
+      const supplyRaw = BigInt(Math.round(parseFloat(mintSupply))) * (BigInt(10) ** BigInt(dec));
+
+      const tx2 = new Transaction().add(
+        createAssociatedTokenAccountInstruction(
+          publicKey,
+          ata,
+          publicKey,
+          mintKeypair.publicKey,
+          TOKEN_2022_PROGRAM_ID,
+        ),
+        createMintToInstruction(
+          mintKeypair.publicKey,
+          ata,
+          publicKey,
+          supplyRaw,
+          [],
+          TOKEN_2022_PROGRAM_ID,
+        ),
+      );
+
+      await sendTx(tx2);
+      setStepStatus('supply', 'done');
+
+      // ── Tx 3 (optional): Revoke mint authority ─────────────────────────────
+      if (revokeMint) {
+        setStepStatus('revoke', 'pending');
+        const tx3 = new Transaction().add(
+          createSetAuthorityInstruction(
+            mintKeypair.publicKey,
+            publicKey,
+            AuthorityType.MintTokens,
+            null,           // null = remove authority permanently
+            [],
+            TOKEN_2022_PROGRAM_ID,
+          ),
+        );
+        await sendTx(tx3);
+        setStepStatus('revoke', 'done');
+      }
+
+      const mintAddr = mintKeypair.publicKey.toBase58();
+      setDeployedMint(mintAddr);
+      toast.success('Token deployed! Mint address copied to clipboard.');
+      navigator.clipboard.writeText(mintAddr).catch(() => {});
+    } catch (err) {
+      console.error(err);
+      toast.error('Deployment failed: ' + (err?.message ?? 'unknown error'));
+      // Mark the in-progress step as errored
+      setDeploySteps(prev => prev.map(s => (s.status === 'pending' ? { ...s, status: 'error' } : s)));
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
   // ── Create presale ────────────────────────────────────────────────────────────
 
   const handleCreate = async () => {
@@ -389,7 +592,8 @@ const Admin = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const setField = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
+  const setField      = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
+  const setTokenField = (key) => (e) => setTokenForm(f => ({ ...f, [key]: e.target.value }));
 
   // ── Not connected ─────────────────────────────────────────────────────────────
 
@@ -409,9 +613,10 @@ const Admin = () => {
   }
 
   const TABS = [
-    { id: 'stats',  label: 'Stats',         Icon: BarChart3  },
+    { id: 'stats',  label: 'Stats',         Icon: BarChart3   },
+    { id: 'token',  label: 'Deploy Token',  Icon: PackagePlus },
     { id: 'create', label: 'Create Presale', Icon: PlusCircle },
-    { id: 'manage', label: 'Manage',         Icon: Settings   },
+    { id: 'manage', label: 'Manage',         Icon: Settings    },
   ];
 
   // Derived quote labels — computed once per render to stay consistent across the template
@@ -560,6 +765,196 @@ const Admin = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── DEPLOY TOKEN TAB ──────────────────────────────────── */}
+        {activeTab === 'token' && (
+          <div className="space-y-6">
+
+            {/* Header */}
+            <div className={cls.card}>
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/10 p-3 rounded-xl shrink-0">
+                  <PackagePlus size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg mb-1">Deploy Token-2022</h2>
+                  <p className="text-sm text-tertiary/60 leading-relaxed">
+                    Creates a Token-2022 mint with on-chain metadata (name, symbol, image URI)
+                    in <span className="text-primary font-semibold">3 wallet approvals</span>.
+                    The mint address is what you paste into the "Base Token Mint" field in Create Presale.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className={`${cls.card} space-y-5`}>
+              <h3 className="font-semibold text-sm text-tertiary/70 uppercase tracking-wide">Token Details</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={cls.label}>Token Name *</label>
+                  <input
+                    className={cls.input}
+                    placeholder="e.g. LaunchX Coin"
+                    value={tokenForm.tokenName}
+                    onChange={setTokenField('tokenName')}
+                    disabled={isDeploying}
+                  />
+                </div>
+                <div>
+                  <label className={cls.label}>Symbol * (auto-uppercased)</label>
+                  <input
+                    className={cls.input}
+                    placeholder="e.g. LX"
+                    value={tokenForm.tokenSymbol}
+                    onChange={setTokenField('tokenSymbol')}
+                    disabled={isDeploying}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={cls.label}>Metadata URI (image / off-chain JSON)</label>
+                <input
+                  className={cls.input}
+                  placeholder="https://ipfs.io/ipfs/..."
+                  value={tokenForm.metadataUri}
+                  onChange={setTokenField('metadataUri')}
+                  disabled={isDeploying}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={cls.label}>Total Supply * (display units)</label>
+                  <input
+                    type="number"
+                    className={cls.input}
+                    placeholder="e.g. 4200000000"
+                    value={tokenForm.mintSupply}
+                    onChange={setTokenField('mintSupply')}
+                    disabled={isDeploying}
+                  />
+                </div>
+                <div>
+                  <label className={cls.label}>Decimals (default: 9)</label>
+                  <input
+                    type="number"
+                    className={cls.input}
+                    min="0"
+                    max="9"
+                    value={tokenForm.decimals}
+                    onChange={setTokenField('decimals')}
+                    disabled={isDeploying}
+                  />
+                </div>
+              </div>
+
+              {/* Revoke mint toggle */}
+              <div className="flex items-center justify-between bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold">Disable Mint Authority</p>
+                  <p className="text-xs text-tertiary/50 mt-0.5">
+                    Permanently locks supply — no more tokens can ever be minted. Recommended for presales.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setTokenForm(f => ({ ...f, revokeMint: !f.revokeMint }))}
+                  disabled={isDeploying}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer
+                    ${tokenForm.revokeMint ? 'bg-primary text-secondary' : 'bg-tertiary/10 text-tertiary'}`}
+                >
+                  {tokenForm.revokeMint ? 'Enabled' : 'Disabled'}
+                </button>
+              </div>
+            </div>
+
+            {/* Step tracker */}
+            <div className={cls.card}>
+              <h3 className="font-semibold text-sm text-tertiary/70 uppercase tracking-wide mb-4">Deployment Steps</h3>
+              <div className="space-y-3">
+                {deploySteps.map((step, idx) => {
+                  const StepIcon =
+                    step.status === 'done'    ? CheckCircle2 :
+                    step.status === 'error'   ? XCircle      :
+                    step.status === 'skipped' ? MinusCircle  :
+                    step.status === 'pending' ? Loader2      :
+                    Circle;
+                  const color =
+                    step.status === 'done'    ? 'text-green-400' :
+                    step.status === 'error'   ? 'text-red-400'   :
+                    step.status === 'skipped' ? 'text-tertiary/30' :
+                    step.status === 'pending' ? 'text-primary'   :
+                    'text-tertiary/30';
+                  return (
+                    <div key={step.id} className="flex items-center gap-3">
+                      <StepIcon
+                        size={18}
+                        className={`shrink-0 ${color} ${step.status === 'pending' ? 'animate-spin' : ''}`}
+                      />
+                      <span className={`text-sm ${step.status === 'skipped' ? 'line-through text-tertiary/30' : step.status === 'idle' ? 'text-tertiary/40' : 'text-tertiary'}`}>
+                        <span className="text-tertiary/40 mr-1.5">{idx + 1}.</span>
+                        {step.label}
+                        {step.status === 'skipped' && <span className="ml-2 text-xs">(skipped)</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Deploy button */}
+            <button
+              onClick={handleDeployToken}
+              disabled={isDeploying}
+              className={`w-full py-4 rounded-full font-bold text-lg border border-primary text-primary bg-secondary/20
+                flex items-center justify-center gap-2 transition-all
+                ${isDeploying ? 'cursor-not-allowed opacity-60' : 'hover:scale-[1.01] cursor-pointer active:scale-[0.99]'}`}
+            >
+              {isDeploying ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
+              {isDeploying ? 'Deploying...' : 'Deploy Token'}
+            </button>
+
+            {/* Result card */}
+            {deployedMint && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 space-y-4">
+                <p className="text-green-400 font-semibold flex items-center gap-2">
+                  <CheckCircle2 size={18} />
+                  Token deployed successfully!
+                </p>
+
+                {/* Mint address */}
+                <div>
+                  <p className="text-xs text-tertiary/50 mb-1.5">Mint Address</p>
+                  <div className="flex items-center gap-2 bg-tertiary/5 border border-tertiary/10 rounded-lg px-3 py-2">
+                    <span className="font-mono text-xs flex-1 break-all text-tertiary">{deployedMint}</span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(deployedMint); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                      className="text-tertiary/50 hover:text-primary cursor-pointer shrink-0"
+                    >
+                      {copied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick-fill action */}
+                <button
+                  onClick={() => {
+                    setForm(f => ({ ...f, baseMint: deployedMint, tokenDecimals: tokenForm.decimals }));
+                    setActiveTab('create');
+                    toast.success('Base Token Mint pre-filled in Create Presale');
+                  }}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold border border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <PlusCircle size={15} />
+                  Use as Base Token in Create Presale
+                </button>
+              </div>
+            )}
+
           </div>
         )}
 
