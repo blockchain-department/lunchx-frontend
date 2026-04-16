@@ -1,0 +1,45 @@
+diff --git a/node_modules/@meteora-ag/presale/dist/index.js b/node_modules/@meteora-ag/presale/dist/index.js
+index fa16f2e..cbceb5f 100644
+--- a/node_modules/@meteora-ag/presale/dist/index.js
++++ b/node_modules/@meteora-ag/presale/dist/index.js
+@@ -1,4 +1,4 @@
+-"use strict";Object.defineProperty(exports, "__esModule", {value: true}); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }var __defProp = Object.defineProperty;
++"use strict"; Object.defineProperty(exports, "__esModule", { value: true }); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; } var __defProp = Object.defineProperty;
+ var __defProps = Object.defineProperties;
+ var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+ var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+@@ -4493,7 +4493,7 @@ var SCHEMA_DATA = _bufferlayout.struct.call(void 0, [
+   _bufferlayoututils.u128.call(void 0, "qPrice"),
+   _bufferlayout.u8.call(void 0, "disableWithdraw"),
+   _bufferlayout.u8.call(void 0, "disableEarlierPresaleEndOnceCapReached"),
+-  _bufferlayout.seq.call(void 0, _bufferlayout.u8.call(void 0, ), 14, "padding0"),
++  _bufferlayout.seq.call(void 0, _bufferlayout.u8.call(void 0,), 14, "padding0"),
+   _bufferlayoututils.u128.call(void 0, "padding1")
+ ]);
+ var FixedPricePresaleHandler = class {
+@@ -4594,8 +4594,8 @@ var ProrataHandler = class {
+ 
+ var SCHEMA_DATA2 = _bufferlayout.struct.call(void 0, [
+   _bufferlayout.u8.call(void 0, "disableEarlierPresaleEndOnceCapReached"),
+-  _bufferlayout.seq.call(void 0, _bufferlayout.u8.call(void 0, ), 15, "padding0"),
+-  _bufferlayout.seq.call(void 0, _bufferlayoututils.u128.call(void 0, ), 2, "padding1")
++  _bufferlayout.seq.call(void 0, _bufferlayout.u8.call(void 0,), 15, "padding0"),
++  _bufferlayout.seq.call(void 0, _bufferlayoututils.u128.call(void 0,), 2, "padding1")
+ ]);
+ var FcfsHandler = class {
+   constructor(presaleModRawData) {
+@@ -6795,10 +6795,12 @@ var Presale = class _Presale {
+         presaleParams.baseMintPubkey,
+         presaleParams.quoteMintPubkey
+       ]);
+-      const baseMint = _spltoken.unpackMint.call(void 0, presaleParams.baseMintPubkey, baseMintAccount);
++      const baseMint = _spltoken.unpackMint.call(void 0, presaleParams.baseMintPubkey, baseMintAccount, baseMintAccount.owner);
+       const quoteMint = _spltoken.unpackMint.call(void 0,
+         presaleParams.quoteMintPubkey,
+-        quoteMintAccount
++        quoteMintAccount,
++        quoteMintAccount.owner
++
+       );
+       const program = createPresaleProgram(connection, programId);
+       const initializePresaleIxs = yield createInitializeFixedPricePresaleIx(
