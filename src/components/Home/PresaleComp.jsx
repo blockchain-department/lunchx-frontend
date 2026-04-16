@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
@@ -26,10 +26,11 @@ const PresaleComp = () => {
     withdraw:false,
     claim:false
   });
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver} = useTimeStore();
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver,updateAll } = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
+  const fetchingPrsaleData = useRef(false);
 
   const inProgressGlobal = inProgress.deposit || inProgress.withdraw || inProgress.claim;
 
@@ -251,6 +252,13 @@ const PresaleComp = () => {
 
   const fetchClaimableAmount = async () => {
     try {
+
+      if(fetchingPrsaleData.current) return;
+
+      console.log("Fetching Prsale Data at PresaleComp!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+      fetchingPrsaleData.current = true;
+
       const presaleInstance = await Presale.create(
         connection,
         new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
@@ -259,7 +267,6 @@ const PresaleComp = () => {
       const decimals = 9;
 
       const presaleData = await presaleInstance.getParsedPresale();
-      console.log("Presale Data : ",presaleData);
       const presaleRegisteries = await presaleData.getAllPresaleRegistries()
 
       
@@ -296,28 +303,20 @@ const PresaleComp = () => {
 
       let presaleState = presaleData.getPresaleProgressState();
 
-        if(presaleState == 3){
-          setActiveTab("Claim")
-        }
+      setPresaleProgress(presaleState);
 
-        setPresaleProgress(presaleState);
+      const endTime = presaleData.presaleAccount.vestingEndTime.toString();
+      const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
 
-        const endTime = presaleData.presaleAccount.presaleEndTime.toString();
-        const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
-
-        console.log("Seconds Left : ",secondsLeft);
-        console.log("Presale State : ",presaleState);
-
-        if(secondsLeft <= 0 && presaleState == 0){
-          updateAll();
-        }
-        if(presaleState == 2){
-          setTimeOver(true);
-        }
-        if(presaleState == 3){
-          setTimeOver(true);
-          setVestingOver(true);
-        }
+      if(presaleState == 3){
+        setActiveTab("Claim");
+        setTimeOver(true);
+        setVestingOver(true);
+      }else if(secondsLeft > 0 && presaleState == 2){
+        setTimeOver(true);
+      }else if(secondsLeft <= 0 && presaleState == 2){
+        updateAll();
+      }
 
       setDepositedSol(totalDepositedSol);
       setClaimableLx(totalClaimableLx);
@@ -332,10 +331,12 @@ const PresaleComp = () => {
       const totalSol = presaleRegisteries[0].presaleTotalDeposit.toString() / Math.pow(10, decimals);
       setTotalDepositedSol(totalSol);
 
+      fetchingPrsaleData.current = false;
+
       
     } catch (error) {
       console.log(error);
-      
+      fetchingPrsaleData.current = false;
     }
   }
 
@@ -372,15 +373,25 @@ const PresaleComp = () => {
   
   useEffect(() => {
 
+    console.log(
+      "timeOver",timeOver,
+      "vestingOver",vestingOver,
+      "presaleProgress",presaleProgress,
+    );
+
     if(timeOver && vestingOver == false){
-      updateAllBalances(); 
+      if(fetchingPrsaleData.current) return;
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000); 
     }
     if(timeOver == true && vestingOver == true){
-      updateAllBalances();
+      if(fetchingPrsaleData.current) return;
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000);
     }
   }, [timeOver,vestingOver]);
-
-  
 
   useEffect(() => {
     if (solAmount > 0 && solAmount <= solBalance) {
@@ -389,12 +400,6 @@ const PresaleComp = () => {
       setLxAmount(0);
     }
   }, [solAmount]);
-  
-  console.log(
-    "timeOver",timeOver,
-    "vestingOver",vestingOver,
-    "presaleProgress",presaleProgress,
-  );
   
 
   return (

@@ -12,7 +12,7 @@ const Hero = () => {
   const containerRef = useRef(null);
   const { connection } = useConnection();
   const [timeLeft,setTimeLeft] = useState(null);
-  const {timeOver,time,setTimeOver,setVestingOver,presaleProgress,setTime,updateAll,vestingOver} = useTimeStore();
+  const {timeOver,presaleProgress,updateAll,vestingOver} = useTimeStore();
 
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
@@ -29,7 +29,7 @@ const Hero = () => {
 
   useEffect(() => {
       fetchClaimableAmount();
-  }, [timeOver]);
+  }, []);
 
   const fetchClaimableAmount = async () => {
     try {
@@ -64,10 +64,13 @@ const Hero = () => {
   }
 
   useEffect(() => {
-    if(timeOver){
-      fetchVestingTime();
+    if (presaleProgress === 2) {
+      setTimeLeft(null); // ✅ clear stale presale time before fetching vesting time
+      setTimeout(() => {
+        fetchVestingTime();
+      }, 3000);
     }
-  }, [timeOver]);
+  }, [presaleProgress]);
 
   const fetchVestingTime = async() => {
 
@@ -173,9 +176,10 @@ const Hero = () => {
             </button>
           </div>
 
-          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : time <= 0 ? "Vesting Ended" : "Vesting Ends In"}</h1>
+          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : (presaleProgress == 2) ? "Vesting Ended" : "Vesting Ends In"}</h1>
 
-          <CountDown remainingTime={timeLeft} />
+          {(presaleProgress == 0 || presaleProgress == 1) && <CountDown remainingTime={timeLeft} type="presale"/>}
+          {(presaleProgress == 2 || presaleProgress == 3) && <CountDown remainingTime={timeLeft} type="vesting"/>}
         </div>
       </div>
  
