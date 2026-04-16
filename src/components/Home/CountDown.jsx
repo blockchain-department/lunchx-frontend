@@ -66,6 +66,10 @@ useEffect(() => {
       setVestingOver(true);
     }
   }
+  if(type === "vesting" && presaleProgress == 3){
+    setVestingOver(true);
+    setTime(0);
+  }
 }, [time, type]);
 
   const days = Math.floor(time / 86400);

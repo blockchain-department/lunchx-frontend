@@ -70,6 +70,9 @@ const Hero = () => {
         fetchVestingTime();
       }, 3000);
     }
+    if(presaleProgress == 3){
+      setTimeLeft(0);
+    }
   }, [presaleProgress]);
 
   const fetchVestingTime = async() => {
@@ -77,7 +80,6 @@ const Hero = () => {
     console.log("Vesting time fetched");
 
     if(presaleProgress == 3 && timeOver && vestingOver){
-      updateAll();
       setTimeLeft(0);
       return;
     }
@@ -176,7 +178,7 @@ const Hero = () => {
             </button>
           </div>
 
-          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : (presaleProgress == 2) ? "Vesting Ended" : "Vesting Ends In"}</h1>
+          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : vestingOver ? "Vesting Ended" : "Vesting Ends In"}</h1>
 
           {(presaleProgress == 0 || presaleProgress == 1) && <CountDown remainingTime={timeLeft} type="presale"/>}
           {(presaleProgress == 2 || presaleProgress == 3) && <CountDown remainingTime={timeLeft} type="vesting"/>}
