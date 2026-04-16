@@ -14,31 +14,23 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import toast from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { network } from "../config";
+import { network, rpcUrl } from "../config";
+import formatSolanaError from "../formatSolanaError";
+
+const queryClient = new QueryClient();
 
 const onError = (error) => {
-  const msg = error?.message ?? "";
-  if (msg.includes("User rejected")) {
-    toast.error("You cancelled the connection.");
-    return;
-  }
-  // Avoid treating send-tx / signing noise as a generic "connection failed"
-  if (
-    msg.includes("sendTransaction") ||
-    msg.includes("Transaction") ||
-    msg.includes("Unexpected error")
-  ) {
-    return;
-  }
-
-  toast.error("Wallet connection failed. Try again.");
+  console.error(error);
+  toast.error(formatSolanaError(error));
 };
 
 export default function AppKitProvider({ children }) {
+  const networkLocal = network === "devnet" ? WalletAdapterNetwork.Devnet : WalletAdapterNetwork.Mainnet;
 
-  const networkLocal = network == "devnet" ? WalletAdapterNetwork.Devnet : WalletAdapterNetwork.Mainnet;
-
-  const endpoint = useMemo(() => clusterApiUrl(networkLocal), [networkLocal]);
+  const endpoint = useMemo(
+    () => rpcUrl || clusterApiUrl(networkLocal),
+    [networkLocal]
+  );
 
   const wallets = useMemo(
     () => [
@@ -46,10 +38,8 @@ export default function AppKitProvider({ children }) {
       new CoinbaseWalletAdapter(),
       new TorusWalletAdapter()
     ],
-    [network]
+    []
   );
-
-  const queryClient = new QueryClient();
 
   return (
     <>

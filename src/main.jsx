@@ -5,9 +5,12 @@ import App from './App.jsx'
 
 import { Buffer } from 'buffer';
 import process from 'process';
+import { initObservability } from './utilities/observability';
 
 window.Buffer = Buffer;
 window.process = process;
+
+initObservability();
 
 createRoot(document.getElementById('root')).render(
     <App />,

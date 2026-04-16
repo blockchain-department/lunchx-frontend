@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, createElement } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
@@ -24,6 +24,7 @@ import {
 } from '@metaplex-foundation/mpl-token-metadata';
 import { Presale, derivePresale, Rounding, calculateMaximumQuoteAmountForPresaleSupply } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
+import { Buffer } from 'buffer';
 import Decimal from 'decimal.js';
 import toast from 'react-hot-toast';
 import {
@@ -32,7 +33,9 @@ import {
   RotateCcw, DollarSign, AlertCircle, Copy, CheckCircle2, RefreshCw,
   PackagePlus, Zap, XCircle, Circle, MinusCircle,
 } from 'lucide-react';
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, TOKEN_METADATA_URI } from '../utilities/config';
+import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, TOKEN_METADATA_URI, network } from '../utilities/config';
+import decimalToBN from '../utilities/decimalToBN';
+import formatSolanaError from '../utilities/formatSolanaError';
 
 const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 
@@ -61,23 +64,10 @@ const cls = {
 // Token-2022 mint + metadata init often exceeds the default ~200k CU; Phantom surfaces that as "Unexpected error".
 const DEPLOY_COMPUTE_UNITS = 600_000;
 const DEPLOY_MIN_FEE_BUFFER_LAMPORTS = 20_000_000; // 0.02 SOL buffer for tx fees/retries
-
-/** Pull useful text from WalletSendTransactionError / nested SendTransactionError (Phantom often wraps the real reason). */
-function formatSolanaSendError(err) {
-  const inner = err?.error?.error ?? err?.error ?? err;
-  const logs = inner?.transactionLogs ?? inner?.logs;
-  if (Array.isArray(logs) && logs.length) {
-    return logs.slice(-10).join(' · ');
-  }
-  if (inner?.transactionMessage) return String(inner.transactionMessage);
-  if (inner?.message && !/^unexpected error$/i.test(String(inner.message).trim())) {
-    return inner.message;
-  }
-  return (
-    err?.message ??
-    'Check devnet SOL for rent + fees, wallet on Devnet, then approve each signature.'
-  );
-}
+const CLUSTER_GENESIS_HASHES = {
+  devnet: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
+  'mainnet-beta': '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
+};
 
 function lamportsToSol(lamports) {
   return Number(lamports || 0) / 1e9;
@@ -161,23 +151,20 @@ function smallestUnitAsDecimalString(decimals) {
   return `0.${'0'.repeat(decimals - 1)}1`;
 }
 
-function decimalToBN(value, decimals = 0) {
-  const normalized = String(value ?? '0').trim();
-  if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error(`Invalid numeric value: ${value}`);
+function isValidPublicKeyString(value) {
+  try {
+    new PublicKey(String(value ?? '').trim());
+    return true;
+  } catch {
+    return false;
   }
-
-  const [wholePart, fractionPart = ''] = normalized.split('.');
-  const paddedFraction = (fractionPart + '0'.repeat(decimals)).slice(0, decimals);
-  const combined = `${wholePart}${paddedFraction}`.replace(/^0+(?=\d)/, '');
-  return new BN(combined || '0', 10);
 }
 
 function StatCard({ label, value, icon: Icon }) {
   return (
     <div className={cls.card}>
       <div className="flex items-center gap-2 text-tertiary/50 text-xs mb-2">
-        <Icon size={12} />
+        {createElement(Icon, { size: 12 })}
         {label}
       </div>
       <div className="font-bold text-lg break-all">{value}</div>
@@ -190,7 +177,7 @@ function ActionCard({ icon: Icon, iconColor = 'text-primary', borderColor = 'bor
     <div className={cls.card}>
       <div className="flex items-start gap-4">
         <div className="bg-primary/10 p-3 rounded-xl">
-          <Icon size={24} className={iconColor} />
+          {createElement(Icon, { size: 24, className: iconColor })}
         </div>
         <div className="flex-1">
           <h3 className="font-bold mb-1">{title}</h3>
@@ -201,7 +188,7 @@ function ActionCard({ icon: Icon, iconColor = 'text-primary', borderColor = 'bor
             className={`px-6 py-3 rounded-full font-semibold text-sm border ${borderColor} ${iconColor} bg-secondary/20 flex items-center gap-2 transition-all
               ${!btnActive || loading ? 'cursor-not-allowed opacity-40' : 'hover:scale-[1.02] cursor-pointer active:scale-[0.98]'}`}
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Icon size={16} />}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : createElement(Icon, { size: 16 })}
             {loading ? loadingLabel : btnLabel}
           </button>
         </div>
@@ -246,19 +233,6 @@ const Admin = () => {
 
   const inProgressAny = Object.values(inProgress).some(Boolean);
 
-  // ── Effects ─────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchStats();
-    } else {
-      setStats(null);
-      setIsCreator(false);
-      setPresaleInstance(null);
-      setStatsVaultOverride(null);  // revert to env vault on disconnect
-    }
-  }, [connected, publicKey?.toBase58()]);
-
   // ── Data fetching ────────────────────────────────────────────────────────────
 
   /**
@@ -268,7 +242,7 @@ const Admin = () => {
    *   window before setStatsVaultOverride has settled. When null, reads
    *   statsVaultOverride state, then falls back to env PRESALE_VAULT_PDA.
    */
-  const fetchStats = async (explicitVault = null) => {
+  const fetchStats = useCallback(async (explicitVault = null) => {
     const targetVault = explicitVault ?? statsVaultOverride ?? PRESALE_VAULT_PDA;
     if (!targetVault) {
       setStats(null);
@@ -358,18 +332,33 @@ const Admin = () => {
         !!(publicKey && creatorStr === publicKey.toBase58())
       );
     } catch (err) {
-      console.log(err);
-      toast.error('Failed to load presale data');
+      console.error(err);
+      toast.error(formatSolanaError(err));
     } finally {
       setLoadingStats(false);
     }
-  };
+  }, [connection, statsVaultOverride, publicKey]);
 
   /** Revert Stats tab back to the env vault (clears any post-create override). */
   const resetToEnvVault = () => {
     setStatsVaultOverride(null);
     fetchStats(PRESALE_VAULT_PDA);
   };
+
+  // ── Effects ─────────────────────────────────────────────────────────────────
+
+  const walletKey = publicKey?.toBase58() ?? null;
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchStats();
+    } else {
+      setStats(null);
+      setIsCreator(false);
+      setPresaleInstance(null);
+      setStatsVaultOverride(null);  // revert to env vault on disconnect
+    }
+  }, [connected, walletKey, fetchStats, publicKey]);
 
   // ── Tx helper ────────────────────────────────────────────────────────────────
 
@@ -444,8 +433,8 @@ const Admin = () => {
       toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
       fetchStats();
     } catch (err) {
-      console.log(err);
-      toast.error('Withdrawal failed');
+      console.error(err);
+      toast.error(formatSolanaError(err));
     } finally {
       setInProgress(p => ({ ...p, withdraw: false }));
     }
@@ -458,8 +447,8 @@ const Admin = () => {
       await sendTx(tx);
       toast.success('Fees collected');
     } catch (err) {
-      console.log(err);
-      toast.error('Fee collection failed');
+      console.error(err);
+      toast.error(formatSolanaError(err));
     } finally {
       setInProgress(p => ({ ...p, collectFee: false }));
     }
@@ -478,8 +467,8 @@ const Admin = () => {
       toast.success('Unsold token action completed');
       fetchStats();
     } catch (err) {
-      console.log(err);
-      toast.error('Action failed');
+      console.error(err);
+      toast.error(formatSolanaError(err));
     } finally {
       setInProgress(p => ({ ...p, unsoldAction: false }));
     }
@@ -650,7 +639,7 @@ const Admin = () => {
       navigator.clipboard.writeText(mintAddr).catch(() => {});
     } catch (err) {
       console.error(err);
-      const detail = formatSolanaSendError(err);
+      const detail = formatSolanaError(err);
       toast.error(`Deployment failed: ${detail}`);
       // Mark the in-progress step as errored
       setDeploySteps(prev => prev.map(s => (s.status === 'pending' ? { ...s, status: 'error' } : s)));
@@ -662,6 +651,11 @@ const Admin = () => {
   // ── Create presale ────────────────────────────────────────────────────────────
 
   const handleCreate = async () => {
+    if (!publicKey) {
+      toast.error('Connect your creator wallet before creating a presale.');
+      return;
+    }
+
     if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !derivedHardCapDisplay) {
       toast.error('Fill in all required fields (*)');
       return;
@@ -670,8 +664,23 @@ const Admin = () => {
     const startTs = Math.floor(new Date(form.startTime).getTime() / 1000);
     const endTs   = Math.floor(new Date(form.endTime).getTime() / 1000);
 
+    if (!Number.isFinite(startTs) || !Number.isFinite(endTs)) {
+      toast.error('Start time and end time must be valid dates.');
+      return;
+    }
+
     if (endTs <= startTs) {
       toast.error('End time must be after start time');
+      return;
+    }
+
+    if (!isValidPublicKeyString(form.baseMint)) {
+      toast.error('Base token mint must be a valid Solana public key.');
+      return;
+    }
+
+    if (!isValidPublicKeyString(form.quoteMint)) {
+      toast.error('Quote token mint must be a valid Solana public key.');
       return;
     }
 
@@ -688,6 +697,10 @@ const Admin = () => {
     const minDepositRaw = minDepositInput > 0 ? String(form.minDeposit) : smallestUnitAsDecimalString(quoteDecimals);
     const maxDepositRaw = form.maxDeposit || hardcapRaw || '0';
 
+    if (!Number.isFinite(hardcap) || !Number.isFinite(softcap) || !Number.isFinite(totalSupply)) {
+      toast.error('Hard cap, soft cap, and total token supply must be valid numbers.');
+      return;
+    }
     if (!(hardcap > 0) || !(totalSupply > 0)) {
       toast.error('Hard cap and total token supply must be greater than 0');
       return;
@@ -698,6 +711,10 @@ const Admin = () => {
     }
     if (minDeposit < 0 || maxDeposit <= 0 || minDeposit > maxDeposit) {
       toast.error('Deposit caps are invalid. Ensure min deposit is not greater than max deposit');
+      return;
+    }
+    if (maxDeposit > hardcap) {
+      toast.error('Max deposit per wallet cannot exceed the hard cap.');
       return;
     }
     if (depositFeeBps < 0 || depositFeeBps > 5000) {
@@ -732,12 +749,35 @@ const Admin = () => {
       }
     }
 
+    try {
+      decimalToBN(form.totalSupply, tokenDecimals);
+      decimalToBN(form.softcap || '0', quoteDecimals);
+      decimalToBN(minDepositRaw, quoteDecimals);
+      decimalToBN(maxDepositRaw, quoteDecimals);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Invalid numeric presale values.');
+      return;
+    }
+
+    const expectedGenesisHash = CLUSTER_GENESIS_HASHES[network];
+    if (expectedGenesisHash) {
+      try {
+        const actualGenesisHash = await connection.getGenesisHash();
+        if (actualGenesisHash !== expectedGenesisHash) {
+          toast.error(`RPC cluster mismatch. Expected ${network} but connected RPC is different.`);
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Unable to verify the connected Solana cluster. Please retry.');
+        return;
+      }
+    }
+
     setInProgress(p => ({ ...p, create: true }));
     setNewVaultAddress('');
 
     try {
-      const dec            = Math.pow(10, tokenDecimals);
-      const solDec         = 1e9;
       const programId      = new PublicKey(PRESALE_PROGRAM_ID);
       const baseMintPubkey = new PublicKey(form.baseMint);
       const quoteMintPubkey = new PublicKey(form.quoteMint);
@@ -827,7 +867,7 @@ const Admin = () => {
       toast.success('Presale created! Stats tab now shows the new vault.');
     } catch (err) {
       console.error('[Admin] Presale creation failed', err);
-      const detail = formatSolanaSendError(err);
+      const detail = formatSolanaError(err);
       toast.error(`Presale creation failed: ${detail}`);
     } finally {
       setInProgress(p => ({ ...p, create: false }));
@@ -943,7 +983,7 @@ const Admin = () => {
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer
                 ${activeTab === id ? 'bg-primary text-secondary' : 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'}`}
             >
-              <Icon size={15} />
+              {createElement(Icon, { size: 15 })}
               {label}
             </button>
           ))}

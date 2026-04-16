@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
@@ -8,10 +8,11 @@ import toast from 'react-hot-toast';
 import useTimeStore from '../../utilities/store/TimeStore';
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import decimalToBN from '../../utilities/decimalToBN';
+import formatSolanaError from '../../utilities/formatSolanaError';
 
 const PresaleComp = () => {
   const [solAmount, setSolAmount] = useState('');
-  const [lxAmount, setLxAmount] = useState(0);
   const { publicKey , sendTransaction , connected } = useWallet();
   const address = publicKey?.toBase58();
   const [solBalance,setSolBalance] = useState(0);
@@ -31,7 +32,7 @@ const PresaleComp = () => {
   // canWithdrawRemainingQuoteAmount() on every fetchClaimableAmount call.
   const [canClaim, setCanClaim] = useState(false);
   const [canRefund, setCanRefund] = useState(false);
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll} = useTimeStore();
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver } = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
@@ -42,242 +43,8 @@ const PresaleComp = () => {
 
   const EXCHANGE_RATE = solPrice/0.0042;
 
-  useEffect(() => {
-      const fetchCryptoPrices = async () => {
-      try {
-          const response = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-          );
-          const data = await response.json();
-          setSolPrice(data.solana.usd);
-      } catch (error) {
-          setSolPrice(84);
-      }
-      };
-      fetchCryptoPrices();
-  }, []);
-
-  const depositTokens = async () => {
-
-    if(!isConnected){
-      toast.error("Please connect your wallet");
-      return;
-    }
-
-    if(solAmount <= 0){
-      toast.error("Please enter a valid amount");
-      return;
-    }
-
-    if(solAmount > solBalance){
-      toast.error("Insufficient balance");
-      return;
-    }
-
-    setInProgress(prev => ({...prev,deposit:true}));
-
-    
-
-    try {
-      const presaleInstance = await Presale.create(
-        connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
-        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
-      );
-
-      
-
-      const depositTx = await presaleInstance.deposit({
-        amount: new BN(parseFloat(solAmount) * 1e9),  // 0.1 SOL
-        owner: new PublicKey(address),
-        registryIndex: new BN(0)  // Default
-      });
-
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      depositTx.recentBlockhash = blockhash;
-      depositTx.lastValidBlockHeight = lastValidBlockHeight;
-      depositTx.feePayer = publicKey;
-
-      
-
-      const txSig = await sendTransaction(depositTx, connection, {
-          skipPreflight: false,
-          maxRetries: 0,
-      });
-      
-
-      await connection.confirmTransaction(
-        {
-          signature: txSig,
-          lastValidBlockHeight: depositTx.lastValidBlockHeight,
-          blockhash: depositTx.recentBlockhash,
-        },
-        "finalized"
-      );
-
-      updateAllBalances();
-
-      setInProgress(prev => ({...prev,deposit:false}));
-
-      setSolAmount(0);
-
-      
-      toast.success("Transaction Confirmed");
-      
-    } catch (error) {
-      
-      // toast.error("Transaction Failed");
-      setInProgress(prev => ({...prev,deposit:false}));
-    }
-    
-  };
-
-  // Partial withdrawal during Ongoing (state 1). Requires a SOL amount input.
-  // Must NOT be called after completion — use claimTokens() for state 2.
-  const withdrawPartial = async () => {
-    if (!isConnected) { toast.error("Please connect your wallet"); return; }
-    if (solAmount <= 0) { toast.error("Please enter a valid amount"); return; }
-    if (solAmount > solBalance) { toast.error("Insufficient balance"); return; }
-    if (solAmount > depositedSol) { toast.error("Amount more than deposited"); return; }
-
-    setInProgress(prev => ({...prev, withdraw: true}));
-    try {
-      const presaleInstance = await Presale.create(
-        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
-      );
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
-      const txs = await Promise.all(
-        escrows.map(escrow => {
-          const s = escrow.getEscrowAccount();
-          return presaleInstance.withdraw({
-            amount: new BN(parseFloat(solAmount) * 1e9),
-            owner: s.owner,
-            registryIndex: new BN(s.registryIndex),
-          });
-        })
-      );
-      await Promise.all(txs.map(async tx => {
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        tx.recentBlockhash = blockhash; tx.lastValidBlockHeight = lastValidBlockHeight; tx.feePayer = publicKey;
-        const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 0 });
-        await connection.confirmTransaction({ signature: sig, lastValidBlockHeight: tx.lastValidBlockHeight, blockhash: tx.recentBlockhash }, "finalized");
-      }));
-      updateAllBalances();
-      setInProgress(prev => ({...prev, withdraw: false}));
-      toast.success("Transaction Confirmed");
-    } catch (error) {
-      console.log(error);
-      setInProgress(prev => ({...prev, withdraw: false}));
-    }
-  };
-
-  // Claim purchased tokens after Completed (state 2) + vestingStartTime passed (canClaim true).
-  // No amount input — claims all pending tokens across all escrows.
-  // activeTab is intentionally NOT read here; call site (Claim button) already gates on canClaim.
-  const claimTokens = async () => {
-    if (!isConnected) { toast.error("Please connect your wallet"); return; }
-
-    setInProgress(prev => ({...prev, claim: true}));
-    try {
-      const presaleInstance = await Presale.create(
-        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
-      );
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
-      const txs = await Promise.all(
-        escrows.map(escrow => {
-          const s = escrow.getEscrowAccount();
-          return presaleInstance.claim({ owner: s.owner, registryIndex: new BN(s.registryIndex) });
-        })
-      );
-      await Promise.all(txs.map(async tx => {
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        tx.recentBlockhash = blockhash; tx.lastValidBlockHeight = lastValidBlockHeight; tx.feePayer = publicKey;
-        const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 0 });
-        await connection.confirmTransaction({ signature: sig, lastValidBlockHeight: tx.lastValidBlockHeight, blockhash: tx.recentBlockhash }, "finalized");
-      }));
-      updateAllBalances();
-      setInProgress(prev => ({...prev, claim: false}));
-      toast.success("Transaction Confirmed");
-    } catch (error) {
-      console.log(error);
-      setInProgress(prev => ({...prev, claim: false}));
-    }
-  };
-
-  // Refund remaining quote tokens.
-  // Called when presale Failed (state 3) OR Completed + Prorata (canWithdrawRemainingQuote).
-  // Uses withdrawRemainingQuote(), NOT withdraw() — the latter is for partial mid-presale exits.
-  const refundTokens = async () => {
-    if (!isConnected) {
-      toast.error("Please connect your wallet");
-      return;
-    }
-
-    setInProgress(prev => ({...prev, refund: true}));
-
-    try {
-      const presaleInstance = await Presale.create(
-        connection,
-        new PublicKey(PRESALE_VAULT_PDA),
-        new PublicKey(PRESALE_PROGRAM_ID)
-      );
-
-      const parsedPresale = presaleInstance.getParsedPresale();
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
-
-      const refundableTxs = await Promise.all(
-        escrows
-          .filter(escrow => escrow.canWithdrawRemainingQuoteAmount(parsedPresale))
-          .map(escrow => {
-            const escrowState = escrow.getEscrowAccount();
-            return presaleInstance.withdrawRemainingQuote({
-              owner: escrowState.owner,
-              registryIndex: new BN(escrowState.registryIndex),
-            });
-          })
-      );
-
-      if (refundableTxs.length === 0) {
-        toast.error("No refundable amount available");
-        setInProgress(prev => ({...prev, refund: false}));
-        return;
-      }
-
-      await Promise.all(
-        refundableTxs.map(async (refundTx) => {
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-          refundTx.recentBlockhash = blockhash;
-          refundTx.lastValidBlockHeight = lastValidBlockHeight;
-          refundTx.feePayer = publicKey;
-
-          const txSig = await sendTransaction(refundTx, connection, {
-            skipPreflight: false,
-            maxRetries: 0,
-          });
-
-          await connection.confirmTransaction(
-            { signature: txSig, lastValidBlockHeight: refundTx.lastValidBlockHeight, blockhash: refundTx.recentBlockhash },
-            "finalized"
-          );
-        })
-      );
-
-      updateAllBalances();
-      setInProgress(prev => ({...prev, refund: false}));
-      toast.success("Refund successful");
-    } catch (error) {
-      console.log(error);
-      setInProgress(prev => ({...prev, refund: false}));
-    }
-  };
-
-  const fetchClaimableAmount = async () => {
+  const fetchClaimableAmount = useCallback(async () => {
+    if (!publicKey) return;
     try {
       const presaleInstance = await Presale.create(
         connection,
@@ -292,7 +59,7 @@ const PresaleComp = () => {
 
       
 
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
 
       
 
@@ -359,61 +126,322 @@ const PresaleComp = () => {
 
       
     } catch (error) {
-      console.log(error);
-      
+      console.error(error);
+      toast.error(formatSolanaError(error));
     }
-  }
+  }, [connection, publicKey, setPresaleProgress, setTimeOver]);
 
-  async function getSolBalance() {
-    try{
-    const pubkey = new PublicKey(address);
-    const lamports = await connection.getBalance(pubkey);
-    return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
-    }catch(error){
-      console.log(error);
+  const getSolBalance = useCallback(async () => {
+    try {
+      if (!publicKey) return 0;
+      const lamports = await connection.getBalance(publicKey);
+      return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
+    } catch (error) {
+      console.error(error);
       return 0;
     }
-  }
+  }, [connection, publicKey]);
 
-  const updateAllBalances = () => {
+  const updateAllBalances = useCallback(() => {
     getSolBalance().then((balance) => {
       setSolBalance(balance);
     });
     fetchClaimableAmount();
-  }
+  }, [fetchClaimableAmount, getSolBalance]);
+
+  const sendAndConfirmWalletTx = async (tx) => {
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
+    tx.lastValidBlockHeight = lastValidBlockHeight;
+    tx.feePayer = publicKey;
+
+    const signature = await sendTransaction(tx, connection, {
+      skipPreflight: false,
+      maxRetries: 3,
+      preflightCommitment: "confirmed",
+    });
+
+    await connection.confirmTransaction(
+      { signature, lastValidBlockHeight, blockhash },
+      "finalized"
+    );
+
+    return signature;
+  };
+
+  const settleTransactions = async (transactions, labels) => {
+    if (!transactions.length) {
+      toast.error(labels.empty ?? 'No transactions available for this action.');
+      updateAllBalances();
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      transactions.map((tx) => sendAndConfirmWalletTx(tx))
+    );
+    const successCount = results.filter((result) => result.status === 'fulfilled').length;
+    const failureCount = results.length - successCount;
+
+    updateAllBalances();
+
+    if (failureCount === 0) {
+      toast.success(labels.success);
+      return;
+    }
+
+    const firstFailure = results.find((result) => result.status === 'rejected');
+    const detail = firstFailure ? formatSolanaError(firstFailure.reason) : 'Unknown error';
+
+    if (successCount === 0) {
+      toast.error(`${labels.failure}: ${detail}`);
+      return;
+    }
+
+    toast.error(`${labels.partial(successCount, results.length)} First error: ${detail}`);
+  };
+
+  useEffect(() => {
+      const fetchCryptoPrices = async () => {
+      try {
+          const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+          );
+          const data = await response.json();
+          setSolPrice(data.solana.usd);
+      } catch {
+          setSolPrice(84);
+      }
+      };
+      fetchCryptoPrices();
+  }, []);
+
+  const depositTokens = async () => {
+
+    if(!isConnected){
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    let depositAmountLamports;
+    try {
+      depositAmountLamports = decimalToBN(solAmount, 9);
+    } catch {
+      toast.error("Please enter a valid SOL amount");
+      return;
+    }
+
+    if (depositAmountLamports.lte(new BN(0))) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if(solAmount > solBalance){
+      toast.error("Insufficient balance");
+      return;
+    }
+
+    setInProgress(prev => ({...prev,deposit:true}));
+
+    
+
+    try {
+      const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+      );
+
+      
+
+      const depositTx = await presaleInstance.deposit({
+        amount: depositAmountLamports,
+        owner: publicKey,
+        registryIndex: new BN(0)  // Default
+      });
+      await sendAndConfirmWalletTx(depositTx);
+
+      updateAllBalances();
+
+      setInProgress(prev => ({...prev,deposit:false}));
+
+      setSolAmount('');
+
+      
+      toast.success("Deposit confirmed");
+      
+    } catch (error) {
+      console.error(error);
+      toast.error(formatSolanaError(error));
+      setInProgress(prev => ({...prev,deposit:false}));
+    }
+    
+  };
+
+  // Partial withdrawal during Ongoing (state 1). Requires a SOL amount input.
+  // Must NOT be called after completion — use claimTokens() for state 2.
+  const withdrawPartial = async () => {
+    if (!isConnected) { toast.error("Please connect your wallet"); return; }
+    let withdrawAmountLamports;
+    try {
+      withdrawAmountLamports = decimalToBN(solAmount, 9);
+    } catch {
+      toast.error("Please enter a valid SOL amount");
+      return;
+    }
+    if (withdrawAmountLamports.lte(new BN(0))) { toast.error("Please enter a valid amount"); return; }
+    if (solAmount > solBalance) { toast.error("Insufficient balance"); return; }
+    if (solAmount > depositedSol) { toast.error("Amount more than deposited"); return; }
+
+    setInProgress(prev => ({...prev, withdraw: true}));
+    try {
+      const presaleInstance = await Presale.create(
+        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+      );
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
+      const txs = await Promise.all(
+        escrows.map(escrow => {
+          const s = escrow.getEscrowAccount();
+          return presaleInstance.withdraw({
+            amount: withdrawAmountLamports,
+            owner: s.owner,
+            registryIndex: new BN(s.registryIndex),
+          });
+        })
+      );
+      await settleTransactions(txs, {
+        success: "Withdraw confirmed",
+        failure: "Withdraw failed",
+        partial: (successful, total) => `Withdraw partially completed (${successful}/${total})`,
+        empty: "No withdrawable escrow found",
+      });
+      setInProgress(prev => ({...prev, withdraw: false}));
+    } catch (error) {
+      console.error(error);
+      toast.error(formatSolanaError(error));
+      setInProgress(prev => ({...prev, withdraw: false}));
+    }
+  };
+
+  // Claim purchased tokens after Completed (state 2) + vestingStartTime passed (canClaim true).
+  // No amount input — claims all pending tokens across all escrows.
+  // activeTab is intentionally NOT read here; call site (Claim button) already gates on canClaim.
+  const claimTokens = async () => {
+    if (!isConnected) { toast.error("Please connect your wallet"); return; }
+
+    setInProgress(prev => ({...prev, claim: true}));
+    try {
+      const presaleInstance = await Presale.create(
+        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+      );
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
+      const txs = await Promise.all(
+        escrows.map(escrow => {
+          const s = escrow.getEscrowAccount();
+          return presaleInstance.claim({ owner: s.owner, registryIndex: new BN(s.registryIndex) });
+        })
+      );
+      await settleTransactions(txs, {
+        success: "Claim confirmed",
+        failure: "Claim failed",
+        partial: (successful, total) => `Claim partially completed (${successful}/${total})`,
+        empty: "No claimable escrow found",
+      });
+      setInProgress(prev => ({...prev, claim: false}));
+    } catch (error) {
+      console.error(error);
+      toast.error(formatSolanaError(error));
+      setInProgress(prev => ({...prev, claim: false}));
+    }
+  };
+
+  // Refund remaining quote tokens.
+  // Called when presale Failed (state 3) OR Completed + Prorata (canWithdrawRemainingQuote).
+  // Uses withdrawRemainingQuote(), NOT withdraw() — the latter is for partial mid-presale exits.
+  const refundTokens = async () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    setInProgress(prev => ({...prev, refund: true}));
+
+    try {
+      const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(PRESALE_VAULT_PDA),
+        new PublicKey(PRESALE_PROGRAM_ID)
+      );
+
+      const parsedPresale = presaleInstance.getParsedPresale();
+      const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
+
+      const refundableTxs = await Promise.all(
+        escrows
+          .filter(escrow => escrow.canWithdrawRemainingQuoteAmount(parsedPresale))
+          .map(escrow => {
+            const escrowState = escrow.getEscrowAccount();
+            return presaleInstance.withdrawRemainingQuote({
+              owner: escrowState.owner,
+              registryIndex: new BN(escrowState.registryIndex),
+            });
+          })
+      );
+
+      if (refundableTxs.length === 0) {
+        toast.error("No refundable amount available");
+        setInProgress(prev => ({...prev, refund: false}));
+        return;
+      }
+
+      await settleTransactions(refundableTxs, {
+        success: "Refund confirmed",
+        failure: "Refund failed",
+        partial: (successful, total) => `Refund partially completed (${successful}/${total})`,
+        empty: "No refundable escrow found",
+      });
+      setInProgress(prev => ({...prev, refund: false}));
+    } catch (error) {
+      console.error(error);
+      toast.error(formatSolanaError(error));
+      setInProgress(prev => ({...prev, refund: false}));
+    }
+  };
 
   useEffect(() => {
     if (isConnected && address) {
-      updateAllBalances();
-    }else{
-      setSolBalance(0);
-      setDepositedSol(0);
-      setClaimableLx(0);
-      setClaimedLx(0);
-      setHardcap(0);
-      setTotalDepositedSol(0);
-    }
-  }, [isConnected,address]);
-  
-  useEffect(() => {
-
-    if(timeOver && vestingOver == false){
-      updateAllBalances(); 
-    }
-    if(timeOver == true && vestingOver == true){
-      updateAllBalances();
-    }
-  }, [timeOver,vestingOver]);
-
-  
-
-  useEffect(() => {
-    if (solAmount > 0 && solAmount <= solBalance) {
-      setLxAmount((solAmount * EXCHANGE_RATE).toLocaleString());
+      queueMicrotask(() => {
+        updateAllBalances();
+      });
     } else {
-      setLxAmount(0);
+      queueMicrotask(() => {
+        setSolBalance(0);
+        setDepositedSol(0);
+        setClaimableLx(0);
+        setClaimedLx(0);
+        setHardcap(0);
+        setTotalDepositedSol(0);
+      });
     }
-  }, [solAmount]);
+  }, [isConnected, address, updateAllBalances]);
+  
+  useEffect(() => {
+    if (timeOver) {
+      queueMicrotask(() => {
+        updateAllBalances();
+      });
+    }
+  }, [timeOver, vestingOver, updateAllBalances]);
+
+  const lxAmount =
+    Number(solAmount) > 0 && Number(solAmount) <= solBalance
+      ? (Number(solAmount) * EXCHANGE_RATE).toLocaleString()
+      : 0;
   
   console.log(
     "timeOver",timeOver,

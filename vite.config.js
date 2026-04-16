@@ -14,7 +14,4 @@ export default defineConfig({
       globals: { Buffer: true, process: true },
     }),
   ],
-  server: {
-    allowedHosts: ["gestural-britni-babyishly.ngrok-free.dev"],
-  },
 });
