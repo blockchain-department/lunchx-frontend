@@ -338,8 +338,17 @@ const PresaleComp = () => {
       setCanRefund(presaleAllowsRefund && userHasRefundableEscrow);
 
       // Presale has ended when Completed (2) or Failed (3)
-      if (presaleState === 2 || presaleState === 3) {
+      const endTime = presaleData.presaleAccount.vestingEndTime.toString();
+      const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+      if(presaleState == 3){
+        setActiveTab("Claim");
         setTimeOver(true);
+        setVestingOver(true);
+      }else if(secondsLeft > 0 && presaleState == 2){
+        setTimeOver(true);
+      }else if(secondsLeft <= 0 && presaleState == 2){
+        updateAll();
       }
       // Note: state 3 is Failed (minimum cap not reached), not "vesting over".
       // Do not call setVestingOver here — vesting only applies to Completed presales.
@@ -397,11 +406,23 @@ const PresaleComp = () => {
   
   useEffect(() => {
 
+    console.log(
+      "timeOver",timeOver,
+      "vestingOver",vestingOver,
+      "presaleProgress",presaleProgress,
+    );
+
     if(timeOver && vestingOver == false){
-      updateAllBalances(); 
+      if(fetchingPrsaleData.current) return;
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000); 
     }
     if(timeOver == true && vestingOver == true){
-      updateAllBalances();
+      if(fetchingPrsaleData.current) return;
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000);
     }
   }, [timeOver,vestingOver]);
 
@@ -490,9 +511,17 @@ const PresaleComp = () => {
                 value={solAmount}
                 onChange={(e) => setSolAmount(e.target.value)}
               />
+              <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl cursor-pointer" onClick={() => {
+                if(activeTab == "Deposit"){
+                  setSolAmount(solBalance);
+                }else{
+                  setSolAmount(depositedSol);
+                }
+              }}>
+                <span className="font-bold">MAX</span>
+              </div>
               <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl">
-                {/* <div className="w-6 h-6 bg-gradient-to-br from-[#14F195] to-[#9945FF] rounded-full"></div> */}
-                  <img className='w-8 h-6' src="/sol.png" alt="sol logo" />
+                <img className='w-8 h-6' src="/sol.png" alt="sol logo" />
                 <span className="font-bold">SOL</span>
               </div>
             </div>
