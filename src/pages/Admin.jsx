@@ -22,7 +22,7 @@ import {
   createCreateMetadataAccountV3Instruction,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
 } from '@metaplex-foundation/mpl-token-metadata';
-import { Presale } from '@meteora-ag/presale';
+import { Presale, derivePresale } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
 import {
@@ -99,27 +99,42 @@ const INITIAL_TOKEN_FORM = {
   revokeMint:  true,
 };
 
-const INITIAL_FORM = {
-  baseMint: '',
-  quoteMint: WSOL_MINT,
-  presaleType: 'fcfs',
-  hardcap: '',
-  softcap: '',
-  startTime: '',
-  endTime: '',
-  totalSupply: '',
-  tokenDecimals: '9',
-  minDeposit: '',
-  maxDeposit: '',
-  depositFeeBps: '0',
-  whitelistMode: '0',
-  unsoldTokenAction: '0',
-  enableVesting: false,
-  immediateReleaseBps: '5000',
-  lockDuration: '0',
-  vestDuration: '1296000',
-  immediateReleaseTimestamp: '',
-};
+function toDatetimeLocalValue(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function createInitialForm() {
+  const start = new Date(Date.now() + 2 * 60 * 1000);
+  // Interpreted in the user's local timezone inside the datetime-local input.
+  const end = new Date(2026, 3, 20, 4, 20);
+
+  return {
+    baseMint: '',
+    quoteMint: WSOL_MINT,
+    presaleType: 'fcfs',
+    hardcap: '51375',
+    softcap: '1250',
+    startTime: toDatetimeLocalValue(start),
+    endTime: toDatetimeLocalValue(end),
+    totalSupply: '1050000000',
+    tokenDecimals: '9',
+    minDeposit: '0',
+    maxDeposit: '',
+    depositFeeBps: '0',
+    whitelistMode: '0',
+    unsoldTokenAction: '0',
+    enableVesting: true,
+    immediateReleaseBps: '7500',
+    lockDuration: '0',
+    vestDuration: '1296000',
+    immediateReleaseTimestamp: toDatetimeLocalValue(end),
+  };
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -132,6 +147,27 @@ function shortAddr(addr) {
 function quoteLabel(mintAddr) {
   if (!mintAddr || mintAddr === WSOL_MINT) return 'SOL';
   return shortAddr(mintAddr);
+}
+
+function getQuoteMintDecimals(mintAddr) {
+  return KNOWN_QUOTE_DECIMALS[mintAddr] ?? 9;
+}
+
+function smallestUnitAsDecimalString(decimals) {
+  if (decimals <= 0) return '1';
+  return `0.${'0'.repeat(decimals - 1)}1`;
+}
+
+function decimalToBN(value, decimals = 0) {
+  const normalized = String(value ?? '0').trim();
+  if (!/^\d+(\.\d+)?$/.test(normalized)) {
+    throw new Error(`Invalid numeric value: ${value}`);
+  }
+
+  const [wholePart, fractionPart = ''] = normalized.split('.');
+  const paddedFraction = (fractionPart + '0'.repeat(decimals)).slice(0, decimals);
+  const combined = `${wholePart}${paddedFraction}`.replace(/^0+(?=\d)/, '');
+  return new BN(combined || '0', 10);
 }
 
 function StatCard({ label, value, icon: Icon }) {
@@ -195,7 +231,7 @@ const Admin = () => {
     unsoldAction: false,
   });
 
-  const [form, setForm] = useState(INITIAL_FORM);
+  const [form, setForm] = useState(() => createInitialForm());
 
   // ── Token deploy state ──────────────────────────────────────────────────────
   const [tokenForm, setTokenForm]     = useState(INITIAL_TOKEN_FORM);
@@ -609,17 +645,76 @@ const Admin = () => {
       return;
     }
 
+    const hardcap = parseFloat(form.hardcap || '0');
+    const softcap = parseFloat(form.softcap || '0');
+    const totalSupply = parseFloat(form.totalSupply || '0');
+    const minDepositInput = parseFloat(form.minDeposit || '0');
+    const maxDeposit = parseFloat(form.maxDeposit || form.hardcap || '0');
+    const depositFeeBps = parseInt(form.depositFeeBps || '0', 10);
+    const tokenDecimals = parseInt(form.tokenDecimals || '9', 10);
+    const quoteDecimals = getQuoteMintDecimals(form.quoteMint);
+    const minDeposit = minDepositInput > 0 ? minDepositInput : 1 / Math.pow(10, quoteDecimals);
+    const minDepositRaw = minDepositInput > 0 ? String(form.minDeposit) : smallestUnitAsDecimalString(quoteDecimals);
+    const maxDepositRaw = form.maxDeposit || form.hardcap || '0';
+
+    if (!(hardcap > 0) || !(totalSupply > 0)) {
+      toast.error('Hard cap and total token supply must be greater than 0');
+      return;
+    }
+    if (softcap < 0 || softcap > hardcap) {
+      toast.error('Soft cap must be between 0 and the hard cap');
+      return;
+    }
+    if (minDeposit < 0 || maxDeposit <= 0 || minDeposit > maxDeposit) {
+      toast.error('Deposit caps are invalid. Ensure min deposit is not greater than max deposit');
+      return;
+    }
+    if (depositFeeBps < 0 || depositFeeBps > 5000) {
+      toast.error('Deposit fee must be between 0 and 5000 bps');
+      return;
+    }
+    if (tokenDecimals < 0 || tokenDecimals > 9) {
+      toast.error('Token decimals must be between 0 and 9');
+      return;
+    }
+
+    let immediateReleaseTs = endTs;
+    if (form.enableVesting) {
+      const immediateReleaseBps = parseInt(form.immediateReleaseBps || '0', 10);
+      const lockDuration = parseInt(form.lockDuration || '0', 10);
+      const vestDuration = parseInt(form.vestDuration || '0', 10);
+      immediateReleaseTs = form.immediateReleaseTimestamp
+        ? Math.floor(new Date(form.immediateReleaseTimestamp).getTime() / 1000)
+        : endTs;
+
+      if (immediateReleaseBps < 0 || immediateReleaseBps > 10000) {
+        toast.error('Immediate release must be between 0 and 10000 bps');
+        return;
+      }
+      if (lockDuration < 0 || vestDuration < 0) {
+        toast.error('Lock and vest duration must be 0 or greater');
+        return;
+      }
+      if (immediateReleaseTs < endTs) {
+        toast.error('Immediate release timestamp cannot be earlier than the presale end time');
+        return;
+      }
+    }
+
     setInProgress(p => ({ ...p, create: true }));
     setNewVaultAddress('');
 
     try {
-      const dec            = Math.pow(10, parseInt(form.tokenDecimals || 9));
+      const dec            = Math.pow(10, tokenDecimals);
       const solDec         = 1e9;
-      const presaleKeypair = Keypair.generate();
+      const programId      = new PublicKey(PRESALE_PROGRAM_ID);
+      const baseMintPubkey = new PublicKey(form.baseMint);
+      const quoteMintPubkey = new PublicKey(form.quoteMint);
+      const presalePubkey  = derivePresale(baseMintPubkey, quoteMintPubkey, publicKey, programId);
 
       const presaleArgs = {
-        presaleMaximumCap: new BN(parseFloat(form.hardcap) * solDec),
-        presaleMinimumCap: new BN(parseFloat(form.softcap || 0) * solDec),
+        presaleMaximumCap: decimalToBN(form.hardcap, quoteDecimals),
+        presaleMinimumCap: decimalToBN(form.softcap || '0', quoteDecimals),
         presaleStartTime:  new BN(startTs),
         presaleEndTime:    new BN(endTs),
         whitelistMode:     parseInt(form.whitelistMode),
@@ -631,36 +726,57 @@ const Admin = () => {
         immediateReleaseBps:       new BN(parseInt(form.immediateReleaseBps)),
         lockDuration:              new BN(parseInt(form.lockDuration)),
         vestDuration:              new BN(parseInt(form.vestDuration)),
-        immediateReleaseTimestamp: new BN(
-          form.immediateReleaseTimestamp
-            ? Math.floor(new Date(form.immediateReleaseTimestamp).getTime() / 1000)
-            : endTs
-        ),
+        immediateReleaseTimestamp: new BN(immediateReleaseTs),
       } : undefined;
 
       const params = {
         presaleArgs,
         ...(lockedVestingArgs ? { lockedVestingArgs } : {}),
-        basePubkey:        presaleKeypair.publicKey,
-        baseMintPubkey:    new PublicKey(form.baseMint),
-        quoteMintPubkey:   new PublicKey(form.quoteMint),
+        basePubkey:        publicKey,
+        baseMintPubkey,
+        quoteMintPubkey,
         creatorPubkey:     publicKey,
         feePayerPubkey:    publicKey,
         presaleRegistries: [{
-          buyerMinimumDepositCap: new BN(parseFloat(form.minDeposit || 0) * solDec),
-          buyerMaximumDepositCap: new BN(parseFloat(form.maxDeposit || form.hardcap) * solDec),
-          presaleSupply:          new BN(parseFloat(form.totalSupply) * dec),
-          depositFeeBps:          new BN(parseInt(form.depositFeeBps || 0)),
+          buyerMinimumDepositCap: decimalToBN(minDepositRaw, quoteDecimals),
+          buyerMaximumDepositCap: decimalToBN(maxDepositRaw, quoteDecimals),
+          presaleSupply:          decimalToBN(form.totalSupply, tokenDecimals),
+          depositFeeBps:          new BN(depositFeeBps),
         }],
       };
 
+      console.groupCollapsed('[Admin] Create presale');
+      console.log('derivedPresale', presalePubkey.toBase58());
+      console.log('params', {
+        baseMint: baseMintPubkey.toBase58(),
+        quoteMint: quoteMintPubkey.toBase58(),
+        creator: publicKey.toBase58(),
+        presaleType: form.presaleType,
+        hardcap,
+        softcap,
+        totalSupply,
+        minDeposit,
+        maxDeposit,
+        tokenDecimals,
+        depositFeeBps,
+        whitelistMode: form.whitelistMode,
+        unsoldTokenAction: form.unsoldTokenAction,
+        lockedVestingArgs: lockedVestingArgs ? {
+          immediateReleaseBps: lockedVestingArgs.immediateReleaseBps.toString(),
+          lockDuration: lockedVestingArgs.lockDuration.toString(),
+          vestDuration: lockedVestingArgs.vestDuration.toString(),
+          immediateReleaseTimestamp: lockedVestingArgs.immediateReleaseTimestamp.toString(),
+        } : null,
+      });
+      console.groupEnd();
+
       const tx = form.presaleType === 'fcfs'
-        ? await Presale.createFcfsPresale(connection, new PublicKey(PRESALE_PROGRAM_ID), params)
-        : await Presale.createProrataPresale(connection, new PublicKey(PRESALE_PROGRAM_ID), params);
+        ? await Presale.createFcfsPresale(connection, programId, params)
+        : await Presale.createProrataPresale(connection, programId, params);
 
-      await sendTx(tx, [presaleKeypair]);
+      await sendTx(tx);
 
-      const vaultAddr = presaleKeypair.publicKey.toBase58();
+      const vaultAddr = presalePubkey.toBase58();
       setNewVaultAddress(vaultAddr);
       // Point Stats at the new vault and switch there for immediate verification.
       // Pass vaultAddr explicitly to fetchStats to avoid the stale-closure window
@@ -670,8 +786,9 @@ const Admin = () => {
       await fetchStats(vaultAddr);
       toast.success('Presale created! Stats tab now shows the new vault.');
     } catch (err) {
-      console.log(err);
-      toast.error('Presale creation failed');
+      console.error('[Admin] Presale creation failed', err);
+      const detail = formatSolanaSendError(err);
+      toast.error(`Presale creation failed: ${detail}`);
     } finally {
       setInProgress(p => ({ ...p, create: false }));
     }
@@ -713,6 +830,16 @@ const Admin = () => {
   // Derived quote labels — computed once per render to stay consistent across the template
   const ql  = quoteLabel(stats?.quoteMint);   // label from live on-chain data (Stats / Manage)
   const fql = quoteLabel(form.quoteMint);     // label from the Create form's current input
+  const formQuoteDecimals = getQuoteMintDecimals(form.quoteMint);
+  const effectiveMinDeposit = parseFloat(form.minDeposit || '0') > 0
+    ? parseFloat(form.minDeposit || '0')
+    : 1 / Math.pow(10, formQuoteDecimals);
+  const effectiveMaxDeposit = parseFloat(form.maxDeposit || form.hardcap || '0') > 0
+    ? parseFloat(form.maxDeposit || form.hardcap || '0')
+    : null;
+  const effectiveImmediateRelease = form.enableVesting
+    ? (form.immediateReleaseTimestamp || form.endTime || 'Presale end time')
+    : 'No vesting';
 
   // ── Main render ───────────────────────────────────────────────────────────────
 
@@ -1123,10 +1250,30 @@ const Admin = () => {
               <div>
                 <label className={cls.label}>Min Deposit per Wallet ({fql})</label>
                 <input type="number" className={cls.input} placeholder="0" value={form.minDeposit} onChange={setField('minDeposit')} />
+                <p className="text-[11px] text-tertiary/45 mt-1">
+                  If left at 0, uses the smallest quote-token unit: {effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}
+                </p>
               </div>
               <div>
                 <label className={cls.label}>Max Deposit per Wallet ({fql})</label>
                 <input type="number" className={cls.input} placeholder="e.g. 50" value={form.maxDeposit} onChange={setField('maxDeposit')} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
+                <p className="text-[11px] text-tertiary/50 mb-1">Effective Min Deposit</p>
+                <p className="text-sm font-semibold">{effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}</p>
+              </div>
+              <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
+                <p className="text-[11px] text-tertiary/50 mb-1">Effective Max Deposit</p>
+                <p className="text-sm font-semibold">
+                  {effectiveMaxDeposit != null ? `${effectiveMaxDeposit} ${fql}` : 'Set hard cap first'}
+                </p>
+              </div>
+              <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
+                <p className="text-[11px] text-tertiary/50 mb-1">Immediate Release Time</p>
+                <p className="text-sm font-semibold break-all">{effectiveImmediateRelease}</p>
               </div>
             </div>
 

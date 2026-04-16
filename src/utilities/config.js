@@ -12,8 +12,6 @@ export const PRESALE_VAULT_PDA =
     ? import.meta.env.VITE_PDA
     : import.meta.env.VITE_PDA_MAINNET;
 
-// Off-chain metadata JSON uploaded to Pinata IPFS.
-// Contains: name, symbol, description, image, attributes.
-// Used as the `uri` field when deploying the Token-2022 mint.
+
 export const TOKEN_METADATA_URI =
   "https://gateway.pinata.cloud/ipfs/bafkreiecr24e6jdwapydm2qplc7g7thfwaf7a4atgsffrrvpet3kdptab4";
