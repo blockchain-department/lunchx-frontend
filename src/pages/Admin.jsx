@@ -22,8 +22,9 @@ import {
   createCreateMetadataAccountV3Instruction,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
 } from '@metaplex-foundation/mpl-token-metadata';
-import { Presale, derivePresale } from '@meteora-ag/presale';
+import { Presale, derivePresale, Rounding, calculateMaximumQuoteAmountForPresaleSupply } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
+import Decimal from 'decimal.js';
 import toast from 'react-hot-toast';
 import {
   Loader2, ShieldCheck, BarChart3, Settings, PlusCircle,
@@ -99,6 +100,8 @@ const INITIAL_TOKEN_FORM = {
   revokeMint:  true,
 };
 
+const FIXED_PRESALE_PRICE = new Decimal('51375').div(new Decimal('1050000000'));
+
 function toDatetimeLocalValue(date) {
   const pad = (value) => String(value).padStart(2, '0');
   return [
@@ -116,7 +119,7 @@ function createInitialForm() {
   return {
     baseMint: '',
     quoteMint: WSOL_MINT,
-    presaleType: 'fcfs',
+    presaleType: 'fixed',
     hardcap: '51375',
     softcap: '1250',
     startTime: toDatetimeLocalValue(start),
@@ -267,11 +270,32 @@ const Admin = () => {
    */
   const fetchStats = async (explicitVault = null) => {
     const targetVault = explicitVault ?? statsVaultOverride ?? PRESALE_VAULT_PDA;
+    if (!targetVault) {
+      setStats(null);
+      setIsCreator(false);
+      setPresaleInstance(null);
+      return;
+    }
+
+    let targetVaultPubkey;
+    try {
+      targetVaultPubkey = new PublicKey(targetVault);
+    } catch (err) {
+      if (explicitVault || statsVaultOverride) throw err;
+      if (import.meta.env.DEV) {
+        console.warn(`[Admin] Skipping stats fetch because PRESALE_VAULT_PDA is invalid: ${targetVault}`);
+      }
+      setStats(null);
+      setIsCreator(false);
+      setPresaleInstance(null);
+      return;
+    }
+
     setLoadingStats(true);
     try {
       const inst = await Presale.create(
         connection,
-        new PublicKey(targetVault),
+        targetVaultPubkey,
         new PublicKey(PRESALE_PROGRAM_ID)
       );
 
@@ -317,6 +341,7 @@ const Admin = () => {
         hardcap,
         softcap,
         deposited,
+        depositFeeBps: Number(reg.depositFeeBps ?? 0),
         supply,
         participants: allEscrows.length,
         state,
@@ -441,6 +466,11 @@ const Admin = () => {
   };
 
   const handleUnsoldAction = async () => {
+    if (!(stats?.state === 2 || stats?.state === 3)) {
+      toast.error('Unsold token actions are only available after the presale ends');
+      return;
+    }
+
     setInProgress(p => ({ ...p, unsoldAction: true }));
     try {
       const tx = await presaleInstance.performUnsoldBaseTokenAction(publicKey);
@@ -632,7 +662,7 @@ const Admin = () => {
   // ── Create presale ────────────────────────────────────────────────────────────
 
   const handleCreate = async () => {
-    if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !form.hardcap) {
+    if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !derivedHardCapDisplay) {
       toast.error('Fill in all required fields (*)');
       return;
     }
@@ -645,17 +675,18 @@ const Admin = () => {
       return;
     }
 
-    const hardcap = parseFloat(form.hardcap || '0');
+    const hardcap = parseFloat(derivedHardCapDisplay || '0');
+    const hardcapRaw = derivedHardCapDisplay || '0';
     const softcap = parseFloat(form.softcap || '0');
     const totalSupply = parseFloat(form.totalSupply || '0');
     const minDepositInput = parseFloat(form.minDeposit || '0');
-    const maxDeposit = parseFloat(form.maxDeposit || form.hardcap || '0');
+    const maxDeposit = parseFloat(form.maxDeposit || hardcapRaw || '0');
     const depositFeeBps = parseInt(form.depositFeeBps || '0', 10);
     const tokenDecimals = parseInt(form.tokenDecimals || '9', 10);
     const quoteDecimals = getQuoteMintDecimals(form.quoteMint);
     const minDeposit = minDepositInput > 0 ? minDepositInput : 1 / Math.pow(10, quoteDecimals);
     const minDepositRaw = minDepositInput > 0 ? String(form.minDeposit) : smallestUnitAsDecimalString(quoteDecimals);
-    const maxDepositRaw = form.maxDeposit || form.hardcap || '0';
+    const maxDepositRaw = form.maxDeposit || hardcapRaw || '0';
 
     if (!(hardcap > 0) || !(totalSupply > 0)) {
       toast.error('Hard cap and total token supply must be greater than 0');
@@ -713,7 +744,7 @@ const Admin = () => {
       const presalePubkey  = derivePresale(baseMintPubkey, quoteMintPubkey, publicKey, programId);
 
       const presaleArgs = {
-        presaleMaximumCap: decimalToBN(form.hardcap, quoteDecimals),
+        presaleMaximumCap: derivedHardCapRaw,
         presaleMinimumCap: decimalToBN(form.softcap || '0', quoteDecimals),
         presaleStartTime:  new BN(startTs),
         presaleEndTime:    new BN(endTs),
@@ -746,12 +777,14 @@ const Admin = () => {
       };
 
       console.groupCollapsed('[Admin] Create presale');
+      const fixedPrice = FIXED_PRESALE_PRICE;
       console.log('derivedPresale', presalePubkey.toBase58());
       console.log('params', {
         baseMint: baseMintPubkey.toBase58(),
         quoteMint: quoteMintPubkey.toBase58(),
         creator: publicKey.toBase58(),
-        presaleType: form.presaleType,
+        presaleType: 'fixed',
+        fixedPrice: fixedPrice.toString(),
         hardcap,
         softcap,
         totalSupply,
@@ -770,9 +803,16 @@ const Admin = () => {
       });
       console.groupEnd();
 
-      const tx = form.presaleType === 'fcfs'
-        ? await Presale.createFcfsPresale(connection, programId, params)
-        : await Presale.createProrataPresale(connection, programId, params);
+      const tx = await Presale.createFixedPricePresale(
+        connection,
+        programId,
+        params,
+        {
+          price: fixedPrice,
+          disableWithdraw: false,
+          rounding: Rounding.Down,
+        },
+      );
 
       await sendTx(tx);
 
@@ -830,16 +870,48 @@ const Admin = () => {
   // Derived quote labels — computed once per render to stay consistent across the template
   const ql  = quoteLabel(stats?.quoteMint);   // label from live on-chain data (Stats / Manage)
   const fql = quoteLabel(form.quoteMint);     // label from the Create form's current input
+  const formTokenDecimals = Math.max(0, parseInt(form.tokenDecimals || '9', 10) || 0);
   const formQuoteDecimals = getQuoteMintDecimals(form.quoteMint);
+  const derivedHardCapRaw = parseFloat(form.totalSupply || '0') > 0
+    ? calculateMaximumQuoteAmountForPresaleSupply(
+        FIXED_PRESALE_PRICE,
+        new BN(formTokenDecimals),
+        new BN(formQuoteDecimals),
+        decimalToBN(form.totalSupply, formTokenDecimals),
+        Rounding.Down,
+      ).maxPresaleCap
+    : null;
+  const derivedHardCapDisplay = derivedHardCapRaw
+    ? new Decimal(derivedHardCapRaw.toString())
+        .div(new Decimal(10).pow(formQuoteDecimals))
+        .toFixed(formQuoteDecimals)
+        .replace(/\.?0+$/, '')
+    : '';
   const effectiveMinDeposit = parseFloat(form.minDeposit || '0') > 0
     ? parseFloat(form.minDeposit || '0')
     : 1 / Math.pow(10, formQuoteDecimals);
-  const effectiveMaxDeposit = parseFloat(form.maxDeposit || form.hardcap || '0') > 0
-    ? parseFloat(form.maxDeposit || form.hardcap || '0')
+  const effectiveMaxDeposit = parseFloat(form.maxDeposit || derivedHardCapDisplay || '0') > 0
+    ? parseFloat(form.maxDeposit || derivedHardCapDisplay || '0')
+    : null;
+  const derivedFixedPrice = parseFloat(form.totalSupply || '0') > 0
+    ? FIXED_PRESALE_PRICE
     : null;
   const effectiveImmediateRelease = form.enableVesting
     ? (form.immediateReleaseTimestamp || form.endTime || 'Presale end time')
     : 'No vesting';
+  const isCompletedPresale = stats?.state === 2;
+  const isFailedPresale = stats?.state === 3;
+  const unsoldActionIsRefund = form.unsoldTokenAction === '0';
+  const manageUnsoldIcon = unsoldActionIsRefund ? RotateCcw : Flame;
+  const manageUnsoldTitle = unsoldActionIsRefund ? 'Refund Unsold Tokens' : 'Burn Unsold Tokens';
+  const manageUnsoldDescription = unsoldActionIsRefund
+    ? 'Return unsold LX from the presale vault back to the creator wallet after the presale ends.'
+    : 'Permanently burn unsold LX from the presale vault after the presale ends.';
+  const manageUnsoldButton = unsoldActionIsRefund ? 'Refund Unsold LX' : 'Burn Unsold LX';
+  const canManageUnsold = isCreator && (isCompletedPresale || isFailedPresale);
+  const withdrawDescription = isFailedPresale
+    ? `Raised ${ql} is not withdrawable after a failed presale. Use "${manageUnsoldTitle}" below to recover the LX allocation.`
+    : `Withdraw all ${ql} raised from the presale into your wallet. Available once the presale ends successfully.`;
 
   // ── Main render ───────────────────────────────────────────────────────────────
 
@@ -1184,20 +1256,16 @@ const Admin = () => {
               Create New Presale
             </h2>
 
-            {/* Presale type */}
-            <div>
-              <label className={cls.label}>Presale Type</label>
-              <div className="flex gap-3">
-                {[['fcfs', 'FCFS'], ['prorata', 'Pro-Rata']].map(([val, lbl]) => (
-                  <button
-                    key={val}
-                    onClick={() => setForm(f => ({ ...f, presaleType: val }))}
-                    className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer
-                      ${form.presaleType === val ? 'bg-primary text-secondary' : 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'}`}
-                  >
-                    {lbl}
-                  </button>
-                ))}
+            <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-xs text-tertiary/50 mb-1">Presale Type</p>
+                <p className="text-sm font-semibold">Fixed Price</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-tertiary/50 mb-1">Derived Price</p>
+                <p className="text-sm font-semibold">
+                  {derivedFixedPrice ? `${derivedFixedPrice.toFixed(formQuoteDecimals + 2)} ${fql} / LX` : 'Set token supply'}
+                </p>
               </div>
             </div>
 
@@ -1217,12 +1285,8 @@ const Admin = () => {
               </div>
             </div>
 
-            {/* Caps & timing — labels use fql so they update when quoteMint changes */}
+            {/* Timing — labels use fql so they update when quoteMint changes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={cls.label}>Hard Cap * ({fql})</label>
-                <input type="number" className={cls.input} placeholder="e.g. 500" value={form.hardcap} onChange={setField('hardcap')} />
-              </div>
               <div>
                 <label className={cls.label}>Soft Cap ({fql})</label>
                 <input type="number" className={cls.input} placeholder="e.g. 100" value={form.softcap} onChange={setField('softcap')} />
@@ -1231,7 +1295,7 @@ const Admin = () => {
                 <label className={cls.label}>Start Time *</label>
                 <input type="datetime-local" className={cls.input} value={form.startTime} onChange={setField('startTime')} />
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className={cls.label}>End Time *</label>
                 <input type="datetime-local" className={cls.input} value={form.endTime} onChange={setField('endTime')} />
               </div>
@@ -1242,6 +1306,18 @@ const Admin = () => {
               <div>
                 <label className={cls.label}>Total Token Supply * (tokens to sell)</label>
                 <input type="number" className={cls.input} placeholder="e.g. 10000000" value={form.totalSupply} onChange={setField('totalSupply')} />
+              </div>
+              <div>
+                <label className={cls.label}>Hard Cap * ({fql})</label>
+                <input
+                  type="text"
+                  className={cls.input}
+                  value={derivedHardCapDisplay}
+                  disabled
+                />
+                <p className="text-[11px] text-tertiary/45 mt-1">
+                  Auto-calculated from total token supply using the fixed presale price.
+                </p>
               </div>
               <div>
                 <label className={cls.label}>Deposit Fee (basis points, 100 = 1%)</label>
@@ -1281,7 +1357,7 @@ const Admin = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={cls.label}>Whitelist Mode</label>
-                <select className={cls.input} value={form.whitelistMode} onChange={setField('whitelistMode')}>
+                <select className={cls.input} value={form.whitelistMode} disabled>
                   <option value="0">Permissionless (Public)</option>
                   <option value="1">Merkle Proof Whitelist</option>
                   <option value="2">Authority Whitelist</option>
@@ -1289,7 +1365,7 @@ const Admin = () => {
               </div>
               <div>
                 <label className={cls.label}>Unsold Token Action</label>
-                <select className={cls.input} value={form.unsoldTokenAction} onChange={setField('unsoldTokenAction')}>
+                <select className={cls.input} value={form.unsoldTokenAction} disabled>
                   <option value="0">Refund to Creator</option>
                   <option value="1">Burn</option>
                 </select>
@@ -1384,33 +1460,35 @@ const Admin = () => {
             <ActionCard
               icon={Download}
               title="Withdraw Raised Capital"
-              description={`Withdraw all ${ql} raised from the presale into your wallet. Available once the presale ends.`}
+              description={withdrawDescription}
               btnLabel={`Withdraw ${ql}`}
-              btnActive={isCreator}
+              btnActive={isCreator && isCompletedPresale}
               loading={inProgress.withdraw}
               loadingLabel="Withdrawing..."
               onClick={handleWithdraw}
             />
 
-            <ActionCard
-              icon={DollarSign}
-              title="Collect Deposit Fees"
-              description="Collect all deposit fees accumulated from participant contributions."
-              btnLabel="Collect Fees"
-              btnActive={isCreator}
-              loading={inProgress.collectFee}
-              loadingLabel="Collecting..."
-              onClick={handleCollectFee}
-            />
+            {(stats?.depositFeeBps ?? 0) > 0 && (
+              <ActionCard
+                icon={DollarSign}
+                title="Collect Deposit Fees"
+                description="Collect all deposit fees accumulated from participant contributions."
+                btnLabel="Collect Fees"
+                btnActive={isCreator}
+                loading={inProgress.collectFee}
+                loadingLabel="Collecting..."
+                onClick={handleCollectFee}
+              />
+            )}
 
             <ActionCard
-              icon={Flame}
-              iconColor="text-red-400"
-              borderColor="border-red-500"
-              title="Handle Unsold Tokens"
-              description="Execute the unsold token action (refund or burn) that was configured when the presale was created. Available after presale ends."
-              btnLabel="Execute Unsold Action"
-              btnActive={isCreator}
+              icon={manageUnsoldIcon}
+              iconColor={unsoldActionIsRefund ? 'text-blue-400' : 'text-red-400'}
+              borderColor={unsoldActionIsRefund ? 'border-blue-500' : 'border-red-500'}
+              title={manageUnsoldTitle}
+              description={manageUnsoldDescription}
+              btnLabel={manageUnsoldButton}
+              btnActive={canManageUnsold}
               loading={inProgress.unsoldAction}
               loadingLabel="Processing..."
               onClick={handleUnsoldAction}
