@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
 import {
-  TOKEN_2022_PROGRAM_ID,
-  ExtensionType,
-  getMintLen,
-  createInitializeMetadataPointerInstruction,
+  PublicKey,
+  Keypair,
+  Transaction,
+  SystemProgram,
+  ComputeBudgetProgram,
+} from '@solana/web3.js';
+import {
+  TOKEN_PROGRAM_ID,
+  MINT_SIZE,
   createInitializeMintInstruction,
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
@@ -15,9 +19,9 @@ import {
   AuthorityType,
 } from '@solana/spl-token';
 import {
-  createInitializeInstruction as createMetadataInitInstruction,
-  pack as packMetadata,
-} from '@solana/spl-token-metadata';
+  createCreateMetadataAccountV3Instruction,
+  PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
+} from '@metaplex-foundation/mpl-token-metadata';
 import { Presale } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
@@ -53,15 +57,37 @@ const cls = {
   card: 'bg-tertiary/5 border border-tertiary/10 rounded-2xl p-6',
 };
 
-// TLV overhead used when computing Token-2022 metadata account space.
-// TYPE_SIZE (2) + LENGTH_SIZE (4) — not exported by @solana/spl-token-metadata v0.1.x.
-const METADATA_TLV_OVERHEAD = 6;
+// Token-2022 mint + metadata init often exceeds the default ~200k CU; Phantom surfaces that as "Unexpected error".
+const DEPLOY_COMPUTE_UNITS = 600_000;
+const DEPLOY_MIN_FEE_BUFFER_LAMPORTS = 20_000_000; // 0.02 SOL buffer for tx fees/retries
+
+/** Pull useful text from WalletSendTransactionError / nested SendTransactionError (Phantom often wraps the real reason). */
+function formatSolanaSendError(err) {
+  const inner = err?.error?.error ?? err?.error ?? err;
+  const logs = inner?.transactionLogs ?? inner?.logs;
+  if (Array.isArray(logs) && logs.length) {
+    return logs.slice(-10).join(' · ');
+  }
+  if (inner?.transactionMessage) return String(inner.transactionMessage);
+  if (inner?.message && !/^unexpected error$/i.test(String(inner.message).trim())) {
+    return inner.message;
+  }
+  return (
+    err?.message ??
+    'Check devnet SOL for rent + fees, wallet on Devnet, then approve each signature.'
+  );
+}
+
+function lamportsToSol(lamports) {
+  return Number(lamports || 0) / 1e9;
+}
 
 // Step status: 'idle' | 'pending' | 'done' | 'error' | 'skipped'
 const INITIAL_DEPLOY_STEPS = [
-  { id: 'mint',   label: 'Create mint + embed metadata on-chain' },
-  { id: 'supply', label: 'Create token account & mint full supply'  },
-  { id: 'revoke', label: 'Disable mint authority (fixed supply)'    },
+  { id: 'mint',     label: 'Create mint account'                      },
+  { id: 'metadata', label: 'Set token metadata (name / symbol / URI)' },
+  { id: 'supply',   label: 'Create token account & mint full supply'  },
+  { id: 'revoke',   label: 'Disable mint authority (fixed supply)'    },
 ];
 
 const INITIAL_TOKEN_FORM = {
@@ -149,7 +175,7 @@ function ActionCard({ icon: Icon, iconColor = 'text-primary', borderColor = 'bor
 
 const Admin = () => {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, connected } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, connected } = useWallet();
 
   const [activeTab, setActiveTab] = useState('stats');
   const [presaleInstance, setPresaleInstance] = useState(null);
@@ -218,7 +244,9 @@ const Admin = () => {
       const allEscrows = await inst.getEscrowsByPresale();
       const state      = parsed.getPresaleProgressState();
 
-      const creator   = parsed.presaleAccount.creator;
+      // SDK decodes presale account with `owner` (creator wallet). Older code used `creator`.
+      const creatorPk =
+        parsed.presaleAccount.owner ?? parsed.presaleAccount.creator;
       const reg       = registries[0];
 
       // Read quote mint first — needed to pick the right divisor for quote-denominated fields.
@@ -243,8 +271,13 @@ const Admin = () => {
       const endTs     = Number(parsed.presaleAccount.presaleEndTime)   * 1000;
       const startTs   = Number(parsed.presaleAccount.presaleStartTime) * 1000;
 
+      const creatorStr = creatorPk?.toBase58?.() ?? '';
+      if (!creatorStr) {
+        throw new Error('Presale account has no owner pubkey');
+      }
+
       setStats({
-        creator:      creator.toBase58(),
+        creator:      creatorStr,
         hardcap,
         softcap,
         deposited,
@@ -261,7 +294,7 @@ const Admin = () => {
       setPresaleInstance(inst);
 
       setIsCreator(
-        !!(publicKey && creator.toBase58() === publicKey.toBase58())
+        !!(publicKey && creatorStr === publicKey.toBase58())
       );
     } catch (err) {
       console.log(err);
@@ -280,16 +313,58 @@ const Admin = () => {
   // ── Tx helper ────────────────────────────────────────────────────────────────
 
   const sendTx = async (tx, extraSigners = []) => {
+    if (!publicKey) {
+      const msg = 'Wallet not ready. Reconnect your wallet and try again.';
+      toast.error(msg);
+      throw new Error(msg);
+    }
+
+    const hasComputeIx = tx.instructions.some((ix) =>
+      ix.programId.equals(ComputeBudgetProgram.programId),
+    );
+    if (!hasComputeIx) {
+      tx.instructions.unshift(
+        ComputeBudgetProgram.setComputeUnitLimit({ units: DEPLOY_COMPUTE_UNITS }),
+      );
+    }
+
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
     tx.recentBlockhash      = blockhash;
     tx.lastValidBlockHeight = lastValidBlockHeight;
     tx.feePayer             = publicKey;
 
-    const sig = await sendTransaction(tx, connection, {
-      skipPreflight: false,
-      maxRetries: 0,
-      signers: extraSigners,
-    });
+    let sig;
+    if (typeof signTransaction === 'function') {
+      if (extraSigners.length) tx.partialSign(...extraSigners);
+      const signedTx = await signTransaction(tx);
+      try {
+        sig = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          maxRetries: 3,
+          preflightCommitment: 'confirmed',
+        });
+      } catch (sendErr) {
+        // Transaction already landed on a prior attempt — treat as success.
+        if (typeof sendErr?.message === 'string' && sendErr.message.includes('already been processed')) {
+          return null;
+        }
+        throw sendErr;
+      }
+    } else {
+      try {
+        sig = await sendTransaction(tx, connection, {
+          skipPreflight: false,
+          maxRetries: 3,
+          preflightCommitment: 'confirmed',
+          signers: extraSigners,
+        });
+      } catch (sendErr) {
+        if (typeof sendErr?.message === 'string' && sendErr.message.includes('already been processed')) {
+          return null;
+        }
+        throw sendErr;
+      }
+    }
 
     await connection.confirmTransaction(
       { signature: sig, blockhash, lastValidBlockHeight },
@@ -351,6 +426,11 @@ const Admin = () => {
     setDeploySteps(prev => prev.map(s => (s.id === id ? { ...s, status } : s)));
 
   const handleDeployToken = async () => {
+    if (!publicKey) {
+      toast.error('Wallet not ready. Reconnect your wallet and try again.');
+      return;
+    }
+
     const { tokenName, tokenSymbol, metadataUri, mintSupply, decimals, revokeMint } = tokenForm;
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !mintSupply) {
@@ -377,66 +457,76 @@ const Admin = () => {
     const dec         = parseInt(decimals || '9');
 
     try {
-      // ── Tx 1: Create mint account with MetadataPointer extension + embed metadata ──
-      //
-      // Space layout (Token-2022 TLV encoding):
-      //   mintLen               → base mint + MetadataPointer extension header
-      //   METADATA_TLV_OVERHEAD → 2-byte type + 4-byte length prefix for the metadata blob
-      //   pack(metadata).length → serialised TokenMetadata fields
-      //
-      // All four instructions must be in this exact order within one transaction:
-      //   1. SystemProgram.createAccount   (allocate + fund)
-      //   2. createInitializeMetadataPointerInstruction  (BEFORE initMint)
-      //   3. createInitializeMintInstruction
-      //   4. createMetadataInitInstruction (embed name/symbol/uri)
-      const metadata = {
-        mint:               mintKeypair.publicKey,
-        name:               tokenName.trim(),
-        symbol:             tokenSymbol.trim().toUpperCase(),
-        uri:                metadataUri.trim(),
-        additionalMetadata: [],
-      };
-
-      const mintLen      = getMintLen([ExtensionType.MetadataPointer]);
-      const metadataLen  = METADATA_TLV_OVERHEAD + packMetadata(metadata).length;
-      const lamports     = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
+      // ── Tx 1: Create mint account (standard SPL Token) ─────────────────────
+      const lamports = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+      const walletBalance = await connection.getBalance(publicKey, 'confirmed');
+      const neededLamports = lamports + DEPLOY_MIN_FEE_BUFFER_LAMPORTS;
+      if (walletBalance < neededLamports) {
+        throw new Error(
+          `Insufficient SOL for deployment. Need ~${lamportsToSol(neededLamports).toFixed(4)} SOL, have ${lamportsToSol(walletBalance).toFixed(4)} SOL.`
+        );
+      }
 
       const tx1 = new Transaction().add(
         SystemProgram.createAccount({
           fromPubkey:       publicKey,
           newAccountPubkey: mintKeypair.publicKey,
-          space:            mintLen + metadataLen,
+          space:            MINT_SIZE,
           lamports,
-          programId:        TOKEN_2022_PROGRAM_ID,
+          programId:        TOKEN_PROGRAM_ID,
         }),
-        // MetadataPointer points to the mint itself (self-referential)
-        createInitializeMetadataPointerInstruction(
-          mintKeypair.publicKey,
-          publicKey,
-          mintKeypair.publicKey,
-          TOKEN_2022_PROGRAM_ID,
-        ),
         createInitializeMintInstruction(
           mintKeypair.publicKey,
           dec,
           publicKey,
-          null,               // freeze authority — null = disabled
-          TOKEN_2022_PROGRAM_ID,
+          null,             // freeze authority — null = disabled
+          TOKEN_PROGRAM_ID,
         ),
-        createMetadataInitInstruction({
-          programId:       TOKEN_2022_PROGRAM_ID,
-          metadata:        mintKeypair.publicKey,
-          updateAuthority: publicKey,
-          mint:            mintKeypair.publicKey,
-          mintAuthority:   publicKey,
-          name:            metadata.name,
-          symbol:          metadata.symbol,
-          uri:             metadata.uri,
-        }),
       );
 
       await sendTx(tx1, [mintKeypair]);
       setStepStatus('mint', 'done');
+      setStepStatus('metadata', 'pending');
+
+      // ── Tx 2: Create Metaplex metadata account ─────────────────────────────
+      const [metadataPDA] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('metadata'),
+          TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+          mintKeypair.publicKey.toBuffer(),
+        ],
+        TOKEN_METADATA_PROGRAM_ID,
+      );
+
+      const tx2 = new Transaction().add(
+        createCreateMetadataAccountV3Instruction(
+          {
+            metadata:        metadataPDA,
+            mint:            mintKeypair.publicKey,
+            mintAuthority:   publicKey,
+            payer:           publicKey,
+            updateAuthority: publicKey,
+          },
+          {
+            createMetadataAccountArgsV3: {
+              data: {
+                name:                 tokenName.trim(),
+                symbol:               tokenSymbol.trim().toUpperCase(),
+                uri:                  metadataUri.trim(),
+                sellerFeeBasisPoints: 0,
+                creators:             null,
+                collection:           null,
+                uses:                 null,
+              },
+              isMutable:         true,
+              collectionDetails: null,
+            },
+          },
+        ),
+      );
+
+      await sendTx(tx2);
+      setStepStatus('metadata', 'done');
       setStepStatus('supply', 'pending');
 
       // ── Tx 2: Create ATA + mint full supply ────────────────────────────────
@@ -444,19 +534,19 @@ const Admin = () => {
         mintKeypair.publicKey,
         publicKey,
         false,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
       );
 
       // Use BigInt to safely handle supplies that overflow JS safe-integer range
       const supplyRaw = BigInt(Math.round(parseFloat(mintSupply))) * (BigInt(10) ** BigInt(dec));
 
-      const tx2 = new Transaction().add(
+      const tx3 = new Transaction().add(
         createAssociatedTokenAccountInstruction(
           publicKey,
           ata,
           publicKey,
           mintKeypair.publicKey,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_PROGRAM_ID,
         ),
         createMintToInstruction(
           mintKeypair.publicKey,
@@ -464,27 +554,27 @@ const Admin = () => {
           publicKey,
           supplyRaw,
           [],
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_PROGRAM_ID,
         ),
       );
 
-      await sendTx(tx2);
+      await sendTx(tx3);
       setStepStatus('supply', 'done');
 
-      // ── Tx 3 (optional): Revoke mint authority ─────────────────────────────
+      // ── Tx 4 (optional): Revoke mint authority ─────────────────────────────
       if (revokeMint) {
         setStepStatus('revoke', 'pending');
-        const tx3 = new Transaction().add(
+        const tx4 = new Transaction().add(
           createSetAuthorityInstruction(
             mintKeypair.publicKey,
             publicKey,
             AuthorityType.MintTokens,
             null,           // null = remove authority permanently
             [],
-            TOKEN_2022_PROGRAM_ID,
+            TOKEN_PROGRAM_ID,
           ),
         );
-        await sendTx(tx3);
+        await sendTx(tx4);
         setStepStatus('revoke', 'done');
       }
 
@@ -494,7 +584,8 @@ const Admin = () => {
       navigator.clipboard.writeText(mintAddr).catch(() => {});
     } catch (err) {
       console.error(err);
-      toast.error('Deployment failed: ' + (err?.message ?? 'unknown error'));
+      const detail = formatSolanaSendError(err);
+      toast.error(`Deployment failed: ${detail}`);
       // Mark the in-progress step as errored
       setDeploySteps(prev => prev.map(s => (s.status === 'pending' ? { ...s, status: 'error' } : s)));
     } finally {

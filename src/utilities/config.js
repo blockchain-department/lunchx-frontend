@@ -16,4 +16,4 @@ export const PRESALE_VAULT_PDA =
 // Contains: name, symbol, description, image, attributes.
 // Used as the `uri` field when deploying the Token-2022 mint.
 export const TOKEN_METADATA_URI =
-  "https://brown-sophisticated-galliform-885.mypinata.cloud/ipfs/bafkreihd4y3kt2eaomid6uaedgcbnb2biuvylhutuo3z3vewwunkac5f5i?pinataGatewayToken=WcBvwy4p_johkMIKc7l02v63-v2zgq1f1ckZfYW8GgPoTrUOMLwXYGi5e14-cX2V";
+  "https://gateway.pinata.cloud/ipfs/bafkreiecr24e6jdwapydm2qplc7g7thfwaf7a4atgsffrrvpet3kdptab4";

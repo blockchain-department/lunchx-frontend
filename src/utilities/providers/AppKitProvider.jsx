@@ -7,6 +7,7 @@ import {
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   CoinbaseWalletAdapter,
+  PhantomWalletAdapter,
   TorusWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
@@ -16,8 +17,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { network } from "../config";
 
 const onError = (error) => {
-  if (error?.message?.includes("User rejected")) {
+  const msg = error?.message ?? "";
+  if (msg.includes("User rejected")) {
     toast.error("You cancelled the connection.");
+    return;
+  }
+  // Avoid treating send-tx / signing noise as a generic "connection failed"
+  if (
+    msg.includes("sendTransaction") ||
+    msg.includes("Transaction") ||
+    msg.includes("Unexpected error")
+  ) {
     return;
   }
 
@@ -32,6 +42,7 @@ export default function AppKitProvider({ children }) {
 
   const wallets = useMemo(
     () => [
+      new PhantomWalletAdapter(),
       new CoinbaseWalletAdapter(),
       new TorusWalletAdapter()
     ],

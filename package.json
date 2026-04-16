@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
+    "@metaplex-foundation/mpl-token-metadata": "^2.13.0",
     "@meteora-ag/presale": "^0.1.0",
     "@mui/material": "^7.3.6",
     "@mui/x-charts": "^8.23.0",
