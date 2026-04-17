@@ -13,6 +13,7 @@ const Hero = () => {
   const { connection } = useConnection();
   const [timeLeft,setTimeLeft] = useState(null);
   const {timeOver,presaleProgress,updateAll,vestingOver} = useTimeStore();
+  const [timeLeftPresale,setTimeLeftPresale] = useState(null);
 
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
@@ -47,6 +48,16 @@ const Hero = () => {
       const endTime = presaleData.presaleAccount.presaleEndTime.toString();
 
       const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+      const startTime = presaleData.presaleAccount.presaleStartTime.toString();
+
+      const secondsLeftStart = Math.floor((startTime * 1000 - Date.now()) / 1000);
+
+      if(secondsLeftStart <= 0){
+        setTimeLeftPresale(0);
+      }else{
+        setTimeLeftPresale(secondsLeftStart);
+      }
 
       // const vestingEndTime = presaleData.presaleAccount.presaleEndTime.toString();
 
@@ -176,10 +187,12 @@ const Hero = () => {
             </button>
           </div>
 
-          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : vestingOver ? "Vesting Ended" : "Vesting Ends In"}</h1>
+          {PRESALE_VAULT_PDA && <h1 className="text-2xl font-bold mb-6">{presaleProgress == 0 ? "Presale Starts In" : !timeOver ? "Presale Ends In" : vestingOver ? "Vesting Ended" : "Vesting Ends In"}</h1>}
+          {!PRESALE_VAULT_PDA && <h1 className="text-2xl font-bold mb-6">PRESALE HAS NOT STARTED YET!</h1>}
 
-          {(presaleProgress == 0 || presaleProgress == 1) && <CountDown remainingTime={timeLeft} type="presale"/>}
-          {(presaleProgress == 2 || presaleProgress == 3) && <CountDown remainingTime={timeLeft} type="vesting"/>}
+          {((presaleProgress == 1) && PRESALE_VAULT_PDA) && <CountDown remainingTime={timeLeft} type="presale"/>}
+          {((presaleProgress == 2 || presaleProgress == 3) && PRESALE_VAULT_PDA) && <CountDown remainingTime={timeLeft} type="vesting"/>}
+          {((presaleProgress == 0) && PRESALE_VAULT_PDA) && <CountDown remainingTime={timeLeftPresale} type="presale-not-started"/>}
         </div>
       </div>
  

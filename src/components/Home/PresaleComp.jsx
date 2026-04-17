@@ -31,7 +31,7 @@ const PresaleComp = () => {
   // canWithdrawRemainingQuoteAmount() on every fetchClaimableAmount call.
   const [canClaim, setCanClaim] = useState(false);
   const [canRefund, setCanRefund] = useState(false);
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll} = useTimeStore();
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll, started} = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
@@ -435,6 +435,14 @@ const PresaleComp = () => {
     }
   }, [timeOver,vestingOver]);
 
+  useEffect(() => {
+    if(started){
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000);
+    }
+  }, [started]);
+
   
 
   useEffect(() => {
@@ -614,7 +622,7 @@ const PresaleComp = () => {
           </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Vault Address</span>
-            <span className="text-primary text-[16px]">{PRESALE_VAULT_PDA}</span>
+            <span className="text-primary text-[16px]">{PRESALE_VAULT_PDA ? PRESALE_VAULT_PDA : "PRESALE HAS NOT STARTED YET!"}</span>
           </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Deposited SOL</span>
