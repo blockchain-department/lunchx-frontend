@@ -77,8 +77,6 @@ const Hero = () => {
 
   const fetchVestingTime = async() => {
 
-    console.log("Vesting time fetched");
-
     if(presaleProgress == 3 && timeOver && vestingOver){
       setTimeLeft(0);
       return;
@@ -185,7 +183,7 @@ const Hero = () => {
         </div>
       </div>
  
-      <style jsx>{`
+      <style jsx="true">{`
         @keyframes fade-in {
           from {
             opacity: 0;

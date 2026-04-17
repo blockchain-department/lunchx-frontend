@@ -105,11 +105,25 @@ const PresaleComp = () => {
       depositTx.lastValidBlockHeight = lastValidBlockHeight;
       depositTx.feePayer = publicKey;
 
-      
+      try {
+        const simResult = await connection.simulateTransaction(depositTx);
+        if (simResult.value.err) {
+          console.error("Simulation error:", simResult.value.err);
+          console.error("Logs:", simResult.value.logs);
+          toast.error("Transaction would fail. Check console for details.");
+          return;
+        }
+      } catch (simError) {
+        console.error("Could not simulate:", simError);
+        toast.error("Transaction would fail. Check console for details.");
+        setInProgress(prev => ({...prev,deposit:false}));
+        return;
+      }      
 
       const txSig = await sendTransaction(depositTx, connection, {
-          skipPreflight: false,
+          skipPreflight: true,
           maxRetries: 0,
+          preflightCommitment: "confirmed",
       });
       
 
@@ -173,7 +187,6 @@ const PresaleComp = () => {
       setInProgress(prev => ({...prev, withdraw: false}));
       toast.success("Transaction Confirmed");
     } catch (error) {
-      console.log(error);
       setInProgress(prev => ({...prev, withdraw: false}));
     }
   };
@@ -206,7 +219,6 @@ const PresaleComp = () => {
       setInProgress(prev => ({...prev, claim: false}));
       toast.success("Transaction Confirmed");
     } catch (error) {
-      console.log(error);
       setInProgress(prev => ({...prev, claim: false}));
     }
   };
@@ -273,7 +285,6 @@ const PresaleComp = () => {
       setInProgress(prev => ({...prev, refund: false}));
       toast.success("Refund successful");
     } catch (error) {
-      console.log(error);
       setInProgress(prev => ({...prev, refund: false}));
     }
   };
@@ -292,7 +303,6 @@ const PresaleComp = () => {
       const decimals = 9;
 
       const presaleData = await presaleInstance.getParsedPresale();
-      console.log("Presale Data : ",presaleData);
       const presaleRegisteries = await presaleData.getAllPresaleRegistries()
 
       
@@ -375,7 +385,6 @@ const PresaleComp = () => {
 
       
     } catch (error) {
-      console.log(error);
       fetchingPrsaleData.current = false;
     }
   }
@@ -386,7 +395,6 @@ const PresaleComp = () => {
     const lamports = await connection.getBalance(pubkey);
     return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
     }catch(error){
-      console.log(error);
       return 0;
     }
   }
@@ -413,12 +421,6 @@ const PresaleComp = () => {
   
   useEffect(() => {
 
-    console.log(
-      "timeOver",timeOver,
-      "vestingOver",vestingOver,
-      "presaleProgress",presaleProgress,
-    );
-
     if(timeOver && vestingOver == false){
       if(fetchingPrsaleData.current) return;
       setTimeout(() => {
@@ -442,12 +444,6 @@ const PresaleComp = () => {
       setLxAmount(0);
     }
   }, [solAmount]);
-  
-  console.log(
-    "timeOver",timeOver,
-    "vestingOver",vestingOver,
-    "presaleProgress",presaleProgress,
-  );
   
 
   return (
@@ -610,7 +606,7 @@ const PresaleComp = () => {
         </div>
 
         {/* Details List */}
-        <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
+        <div className="space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
           
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Network</span>

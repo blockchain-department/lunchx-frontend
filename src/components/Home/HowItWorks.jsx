@@ -52,7 +52,7 @@ const features = [
           
           <div className="flex flex-row flex-wrap justify-between md:w-[50%] w-full">
             {features.map((feature, i) => (
-              <div className={`${i==2 ? "w-full min-w-full mt-[2%]" : "md:w-[49%] md:min-w-[49%] w-full min-w-full mt-[2%]"} relative`}>
+              <div key={i} className={`${i==2 ? "w-full min-w-full mt-[2%]" : "md:w-[49%] md:min-w-[49%] w-full min-w-full mt-[2%]"} relative`}>
 
                 <div className={`${i == 2 ? 'w-18 h-25 md:h-25 md:w-20' : 'md:w-15 md:h-25 w-18 h-25'} absolute top-0 left-0 rounded-tl-full rotate-180 bg-secondary z-1`}></div>
                 <p className="absolute top-0 left-[2%] z-2 text-primary text-7xl font-semibold mb-10">{i+1}</p>

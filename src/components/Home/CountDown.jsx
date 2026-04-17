@@ -39,9 +39,6 @@ const CountDown = ({ remainingTime = 0 , type}) => {
   const { setTimeOver, setVestingOver , presaleProgress } = useTimeStore();
   const [time,setTime] = useState(remainingTime);
 
-  console.log("time",time);
-  console.log("remainingTime",remainingTime);
-
   useEffect(() => {
     setTime(remainingTime);
   }, [remainingTime]);
