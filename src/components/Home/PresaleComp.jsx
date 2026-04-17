@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
@@ -35,6 +35,7 @@ const PresaleComp = () => {
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
+  const fetchingPrsaleData = useRef(false);
 
   const inProgressGlobal = inProgress.deposit || inProgress.withdraw || inProgress.claim || inProgress.refund;
 
@@ -104,11 +105,25 @@ const PresaleComp = () => {
       depositTx.lastValidBlockHeight = lastValidBlockHeight;
       depositTx.feePayer = publicKey;
 
-      
+      try {
+        const simResult = await connection.simulateTransaction(depositTx);
+        if (simResult.value.err) {
+          console.error("Simulation error:", simResult.value.err);
+          console.error("Logs:", simResult.value.logs);
+          toast.error("Transaction would fail. Check console for details.");
+          return;
+        }
+      } catch (simError) {
+        console.error("Could not simulate:", simError);
+        toast.error("Transaction would fail. Check console for details.");
+        setInProgress(prev => ({...prev,deposit:false}));
+        return;
+      }      
 
       const txSig = await sendTransaction(depositTx, connection, {
-          skipPreflight: false,
+          skipPreflight: true,
           maxRetries: 0,
+          preflightCommitment: "confirmed",
       });
       
 
@@ -172,7 +187,6 @@ const PresaleComp = () => {
       setInProgress(prev => ({...prev, withdraw: false}));
       toast.success("Transaction Confirmed");
     } catch (error) {
-      console.log(error);
       setInProgress(prev => ({...prev, withdraw: false}));
     }
   };
@@ -205,7 +219,6 @@ const PresaleComp = () => {
       setInProgress(prev => ({...prev, claim: false}));
       toast.success("Transaction Confirmed");
     } catch (error) {
-      console.log(error);
       setInProgress(prev => ({...prev, claim: false}));
     }
   };
@@ -272,13 +285,16 @@ const PresaleComp = () => {
       setInProgress(prev => ({...prev, refund: false}));
       toast.success("Refund successful");
     } catch (error) {
-      console.log(error);
       setInProgress(prev => ({...prev, refund: false}));
     }
   };
 
   const fetchClaimableAmount = async () => {
     try {
+
+      if(fetchingPrsaleData.current) return;
+      fetchingPrsaleData.current = true;
+
       const presaleInstance = await Presale.create(
         connection,
         new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
@@ -287,7 +303,6 @@ const PresaleComp = () => {
       const decimals = 9;
 
       const presaleData = await presaleInstance.getParsedPresale();
-      console.log("Presale Data : ",presaleData);
       const presaleRegisteries = await presaleData.getAllPresaleRegistries()
 
       
@@ -338,8 +353,17 @@ const PresaleComp = () => {
       setCanRefund(presaleAllowsRefund && userHasRefundableEscrow);
 
       // Presale has ended when Completed (2) or Failed (3)
-      if (presaleState === 2 || presaleState === 3) {
+      const endTime = presaleData.presaleAccount.vestingEndTime.toString();
+      const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+      if(presaleState == 3){
+        setActiveTab("Claim");
         setTimeOver(true);
+        setVestingOver(true);
+      }else if(secondsLeft > 0 && presaleState == 2){
+        setTimeOver(true);
+      }else if(secondsLeft <= 0 && presaleState == 2){
+        updateAll();
       }
       // Note: state 3 is Failed (minimum cap not reached), not "vesting over".
       // Do not call setVestingOver here — vesting only applies to Completed presales.
@@ -357,10 +381,11 @@ const PresaleComp = () => {
       const totalSol = presaleRegisteries[0].presaleTotalDeposit.toString() / Math.pow(10, decimals);
       setTotalDepositedSol(totalSol);
 
+      fetchingPrsaleData.current = false;
+
       
     } catch (error) {
-      console.log(error);
-      
+      fetchingPrsaleData.current = false;
     }
   }
 
@@ -370,7 +395,6 @@ const PresaleComp = () => {
     const lamports = await connection.getBalance(pubkey);
     return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
     }catch(error){
-      console.log(error);
       return 0;
     }
   }
@@ -398,10 +422,16 @@ const PresaleComp = () => {
   useEffect(() => {
 
     if(timeOver && vestingOver == false){
-      updateAllBalances(); 
+      if(fetchingPrsaleData.current) return;
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000); 
     }
     if(timeOver == true && vestingOver == true){
-      updateAllBalances();
+      if(fetchingPrsaleData.current) return;
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000);
     }
   }, [timeOver,vestingOver]);
 
@@ -414,12 +444,6 @@ const PresaleComp = () => {
       setLxAmount(0);
     }
   }, [solAmount]);
-  
-  console.log(
-    "timeOver",timeOver,
-    "vestingOver",vestingOver,
-    "presaleProgress",presaleProgress,
-  );
   
 
   return (
@@ -458,6 +482,12 @@ const PresaleComp = () => {
             <span className="text-tertiary/60"> — minimum cap was not reached. Your full deposit is available for refund.</span>
           </div>
         )}
+        {presaleProgress === 2 && (
+          <div className="mb-6 bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center text-sm">
+            <span className="text-green-400 font-semibold">Presale Sucessfull</span>
+            <span className="text-tertiary/60"> — {claimedLx == totalClaimableLx ? 'You have claimed all your LX tokens.' : 'You can now claim your LX tokens.'}</span>
+          </div>
+        )}
 
         {/* Tabs — only visible during Ongoing (state 1) */}
         <div className="flex justify-center gap-4 mb-8">
@@ -490,9 +520,17 @@ const PresaleComp = () => {
                 value={solAmount}
                 onChange={(e) => setSolAmount(e.target.value)}
               />
+              <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl cursor-pointer" onClick={() => {
+                if(activeTab == "Deposit"){
+                  setSolAmount(solBalance);
+                }else{
+                  setSolAmount(depositedSol);
+                }
+              }}>
+                <span className="font-bold">MAX</span>
+              </div>
               <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl">
-                {/* <div className="w-6 h-6 bg-gradient-to-br from-[#14F195] to-[#9945FF] rounded-full"></div> */}
-                  <img className='w-8 h-6' src="/sol.png" alt="sol logo" />
+                <img className='w-8 h-6' src="/sol.png" alt="sol logo" />
                 <span className="font-bold">SOL</span>
               </div>
             </div>
@@ -546,7 +584,7 @@ const PresaleComp = () => {
           </button>}
 
           {/* Claim tokens — Completed (state 2), gated by canClaim() which checks vestingStartTime */}
-          {(isConnected && presaleProgress === 2 && canClaim) && <button
+          {(isConnected && presaleProgress === 2 && claimableLx > 0) && <button
             className={`${inProgress.claim || claimableLx === 0 || depositedSol === 0 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={() => claimTokens()}
             disabled={inProgress.claim || claimableLx === 0 || depositedSol === 0 || inProgressGlobal}
@@ -568,7 +606,7 @@ const PresaleComp = () => {
         </div>
 
         {/* Details List */}
-        <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
+        <div className="space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
           
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Network</span>
