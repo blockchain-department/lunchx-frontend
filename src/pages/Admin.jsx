@@ -63,6 +63,7 @@ import {
 
 const WSOL_MINT = "So11111111111111111111111111111111111111112";
 
+
 // Decimal places for known quote mints. Used to convert on-chain smallest-unit amounts
 // (presaleMaximumCap, presaleTotalDeposit, presaleMinimumCap) to display values.
 // Add any additional quote mint here to get correct stats display; unknown mints fall
@@ -84,9 +85,12 @@ const STATE_COLORS = [
   "text-red-400",
 ];
 
+
+
+
 const cls = {
   input:
-    "w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors placeholder:text-tertiary/40",
+    "w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none  transition-colors placeholder:text-tertiary/40",
   label: "block text-xs text-tertiary/60 mb-1.5",
   card: "bg-tertiary/5 border border-tertiary/10 rounded-2xl p-6",
 };
@@ -169,8 +173,8 @@ function createInitialForm() {
     unsoldTokenAction: "0",
     enableVesting: true,
     immediateReleaseBps: "7500",
-    lockDuration: "0",
-    vestDuration: "1296000",
+    lockDuration: "",
+    vestDuration: "0",
     immediateReleaseTimestamp: toDatetimeLocalValue(end),
   };
 }
@@ -749,7 +753,12 @@ const Admin = () => {
   };
 
   // ── Create presale ────────────────────────────────────────────────────────────
-
+  const [duration, setDuration] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const totalSeconds =
+  duration.d * 86400 +   // days → seconds
+  duration.h * 3600 +    // hours → seconds
+  duration.m * 60 +      // minutes → seconds
+  duration.s;
   const handleCreate = async () => {
     if (
       !form.baseMint ||
@@ -761,7 +770,7 @@ const Admin = () => {
       toast.error("Fill in all required fields (*)");
       return;
     }
-
+    
     const startTs = Math.floor(new Date(form.startTime).getTime() / 1000);
     const endTs = Math.floor(new Date(form.endTime).getTime() / 1000);
 
@@ -778,6 +787,7 @@ const Admin = () => {
     const maxDeposit = parseFloat(form.maxDeposit || hardcapRaw || "0");
     const depositFeeBps = parseInt(form.depositFeeBps || "0", 10);
     const tokenDecimals = parseInt(form.tokenDecimals || "9", 10);
+    
     const quoteDecimals = getQuoteMintDecimals(form.quoteMint);
     const minDeposit =
       minDepositInput > 0 ? minDepositInput : 1 / Math.pow(10, quoteDecimals);
@@ -813,7 +823,10 @@ const Admin = () => {
     let immediateReleaseTs = endTs;
     if (form.enableVesting) {
       const immediateReleaseBps = parseInt(form.immediateReleaseBps || "0", 10);
-      const lockDuration = parseInt(form.lockDuration || "0", 10);
+      // const lockDuration = parseInt(form.lockDuration || "0", 10);
+      
+      const lockDuration = duration.d * 86400 + duration.h * 3600 + duration.m * 60 + duration.s;
+      console.log("lockDuration" , lockDuration)
       const vestDuration = parseInt(form.vestDuration || "0", 10);
       immediateReleaseTs = form.immediateReleaseTimestamp
         ? Math.floor(new Date(form.immediateReleaseTimestamp).getTime() / 1000)
@@ -864,7 +877,7 @@ const Admin = () => {
       const lockedVestingArgs = form.enableVesting
         ? {
             immediateReleaseBps: new BN(parseInt(form.immediateReleaseBps)),
-            lockDuration: new BN(parseInt(form.lockDuration)),
+            lockDuration: new BN(totalSeconds),
             vestDuration: new BN(parseInt(form.vestDuration)),
             immediateReleaseTimestamp: new BN(immediateReleaseTs),
           }
@@ -1297,7 +1310,7 @@ const Admin = () => {
                   />
                 </div>
                 <div>
-                  <label className={cls.label}>Symbol</label>
+                  <label className={cls.label} >Symbol</label>
                   <input
                     className={cls.input}
                     placeholder="LX"
@@ -1317,6 +1330,7 @@ const Admin = () => {
                   className={cls.input}
                   placeholder="https://ipfs.io/ipfs/..."
                   value={tokenForm.metadataUri}
+                  readOnly
                   onChange={setTokenField("metadataUri")}
                   disabled={isDeploying}
                 />
@@ -1527,6 +1541,7 @@ const Admin = () => {
                   className={cls.input}
                   value={form.quoteMint}
                   onChange={setField("quoteMint")}
+                  readOnly
                 />
               </div>
               <div>
@@ -1544,18 +1559,19 @@ const Admin = () => {
             {/* Timing — labels use fql so they update when quoteMint changes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={cls.label}>Soft Cap ({fql})</label>
+                <label className={cls.label}> ({fql})</label>
                 <input
-                  type="number"
-                  className={cls.input}
-                  placeholder="e.g. 100"
-                  value={form.softcap}
-                  onChange={setField("softcap")}
+                      type="number"
+                      className={`${cls.input} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                      placeholder="e.g. 100"
+                      value={form.softcap}
+                      onChange={setField("softcap")}
                 />
               </div>
               <div>
                 <label className={cls.label}>Start Time *</label>
                 <input
+
                   type="datetime-local"
                   className={cls.input}
                   value={form.startTime}
@@ -1588,7 +1604,7 @@ const Admin = () => {
                 </label>
                 <input
                   type="number"
-                  className={cls.input}
+                  className={`${cls.input} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                   placeholder="e.g. 10000000"
                   value={form.totalSupply}
                   onChange={setField("totalSupply")}
@@ -1607,7 +1623,7 @@ const Admin = () => {
                   presale price.
                 </p>
               </div>
-              <div>
+              {/* <div>
                 <label className={cls.label}>
                   Deposit Fee (basis points, 100 = 1%)
                 </label>
@@ -1618,8 +1634,8 @@ const Admin = () => {
                   value={form.depositFeeBps}
                   onChange={setField("depositFeeBps")}
                 />
-              </div>
-              <div>
+              </div> */}
+              {/* <div>
                 <label className={cls.label}>
                   Min Deposit per Wallet ({fql})
                 </label>
@@ -1634,8 +1650,8 @@ const Admin = () => {
                   If left at 0, uses the smallest quote-token unit:{" "}
                   {effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}
                 </p>
-              </div>
-              <div>
+              </div> */}
+              {/* <div>
                 <label className={cls.label}>
                   Max Deposit per Wallet ({fql})
                 </label>
@@ -1646,7 +1662,7 @@ const Admin = () => {
                   value={form.maxDeposit}
                   onChange={setField("maxDeposit")}
                 />
-              </div>
+              </div> */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1712,28 +1728,57 @@ const Admin = () => {
               </div>
               {form.enableVesting && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  <div>
+                  <div className="mt-5">
                     <label className={cls.label}>
-                      Immediate Release (bps — 5000 = 50%)
+                      Immediate Release (bps — 7500 = 75%)
                     </label>
                     <input
                       type="number"
+                      readOnly
                       className={cls.input}
                       value={form.immediateReleaseBps}
                       onChange={setField("immediateReleaseBps")}
                     />
                   </div>
-                  <div>
-                    <label className={cls.label}>
-                      Lock Duration (seconds, 0 = none)
-                    </label>
-                    <input
-                      type="number"
-                      className={cls.input}
-                      value={form.lockDuration}
-                      onChange={setField("lockDuration")}
-                    />
-                  </div>
+                  
+                 <div>
+  <label className={cls.label}>Lock Duration (0 = none)</label>
+  <div className="grid grid-cols-4 gap-2">
+    {[
+      { key: "d", label: "Days" },
+      { key: "h", label: "Hours" },
+      { key: "m", label: "Minutes" },
+      { key: "s", label: "Seconds" },
+    ].map(({ key, label }) => (
+      <div key={key} className="flex flex-col gap-1">
+        <label className="text-xs text-center text-gray-400">{label}</label>
+        <input
+          type="number"
+          min="0"
+          className={`${cls.input} text-center`}
+          value={duration[key]}
+          onChange={(e) =>
+            setDuration((prev) => ({ ...prev, [key]: +e.target.value || 0 }))
+          }
+        />
+      </div>
+    ))}
+ 
+  </div>
+
+  <div className="mt-3">
+  <label className={cls.label}>Total Seconds</label>
+  <input
+    type="number"
+    className={`${cls.input} text-center bg-gray-100`}
+    value={totalSeconds}
+    readOnly
+  />
+</div>
+
+</div>
+
+
                   <div>
                     <label className={cls.label}>
                       Vest Duration (seconds — 1296000 = 15 days)
@@ -1741,6 +1786,7 @@ const Admin = () => {
                     <input
                       type="number"
                       className={cls.input}
+                      readOnly
                       value={form.vestDuration}
                       onChange={setField("vestDuration")}
                     />
