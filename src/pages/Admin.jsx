@@ -86,7 +86,7 @@ const STATE_COLORS = [
 
 const cls = {
   input:
-    "w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors placeholder:text-tertiary/40",
+    "w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none transition-colors placeholder:text-tertiary/40",
   label: "block text-xs text-tertiary/60 mb-1.5",
   card: "bg-tertiary/5 border border-tertiary/10 rounded-2xl p-6",
 };
@@ -149,8 +149,6 @@ function toDatetimeLocalValue(date) {
 
 function createInitialForm() {
   const start = new Date(Date.now() + 2 * 60 * 1000);
-  // Interpreted in the user's local timezone inside the datetime-local input.
-  const end = new Date(2026, 3, 20, 4, 20);
 
   return {
     baseMint: "",
@@ -159,7 +157,7 @@ function createInitialForm() {
     hardcap: "51375",
     softcap: "1250",
     startTime: toDatetimeLocalValue(start),
-    endTime: toDatetimeLocalValue(end),
+    endTime: toDatetimeLocalValue(start),
     totalSupply: "1050000000",
     tokenDecimals: "9",
     minDeposit: "0",
@@ -169,9 +167,9 @@ function createInitialForm() {
     unsoldTokenAction: "0",
     enableVesting: true,
     immediateReleaseBps: "7500",
-    lockDuration: "0",
-    vestDuration: "1296000",
-    immediateReleaseTimestamp: toDatetimeLocalValue(end),
+    lockDuration: "",
+    vestDuration: "0",
+    immediateReleaseTimestamp: toDatetimeLocalValue(start),
   };
 }
 
@@ -324,8 +322,33 @@ const Admin = () => {
    *   statsVaultOverride state, then falls back to env PRESALE_VAULT_PDA.
    */
   const fetchStats = async (explicitVault = null) => {
-    const targetVault =
-      explicitVault ?? statsVaultOverride ?? PRESALE_VAULT_PDA;
+
+    const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
+    const creatorBytes = publicKeyEnv.toBase58(); // For memcmp
+    const programID = new PublicKey(PRESALE_PROGRAM_ID);
+    const accounts = await connection.getProgramAccounts(programID, {
+      encoding: 'base64', // Or 'jsonParsed' if supported
+      filters: [
+        // { dataSize: 1234 }, // Get from Solscan/raw data
+        {
+          memcmp: {
+            offset: 8, // Adjust: 0=discriminator (8 bytes), 8=creator (32 bytes)
+            bytes: creatorBytes,
+          },
+        },
+      ],
+    });
+
+    let targetVault = null;
+
+    // Deserialize/parse accounts as needed
+    console.log(accounts);
+    if(accounts.length > 0){
+      console.log(accounts[accounts.length - 1].pubkey.toBase58());
+      targetVault = accounts[accounts.length - 1].pubkey.toBase58();
+    }
+
+
     if (!targetVault) {
       setStats(null);
       setIsCreator(false);
@@ -503,20 +526,24 @@ const Admin = () => {
 
   // ── Admin actions ────────────────────────────────────────────────────────────
 
-  const handleWithdraw = async () => {
-    setInProgress((p) => ({ ...p, withdraw: true }));
-    try {
-      const tx = await presaleInstance.creatorWithdraw({ creator: publicKey });
-      await sendTx(tx);
-      toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
-      fetchStats();
-    } catch (err) {
-      console.log(err);
-      toast.error("Withdrawal failed");
-    } finally {
-      setInProgress((p) => ({ ...p, withdraw: false }));
-    }
-  };
+  const handleWithdraw = async (type) => {
+setInProgress((p) => ({ ...p, withdraw: true }));
+try {
+const tx = await presaleInstance.creatorWithdraw({ creator: publicKey });
+await sendTx(tx);
+if (type === "sol") {
+toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
+} else if (type === "lx") {
+toast.success("LX tokens withdrawn successfully");
+}
+fetchStats();
+} catch (err) {
+console.log(err);
+toast.error("Withdrawal failed");
+} finally {
+setInProgress((p) => ({ ...p, withdraw: false }));
+}
+};
 
   const handleCollectFee = async () => {
     setInProgress((p) => ({ ...p, collectFee: true }));
@@ -533,7 +560,7 @@ const Admin = () => {
   };
 
   const handleUnsoldAction = async () => {
-    if (!(stats?.state === 2 || stats?.state === 3)) {
+    if (stats?.state !== 2) {
       toast.error(
         "Unsold token actions are only available after the presale ends",
       );
@@ -750,6 +777,13 @@ const Admin = () => {
 
   // ── Create presale ────────────────────────────────────────────────────────────
 
+  const [duration, setDuration] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const totalSeconds =
+    duration.d * 86400 + // days → seconds
+    duration.h * 3600 + // hours → seconds
+    duration.m * 60 + // minutes → seconds
+    duration.s;
+
   const handleCreate = async () => {
     if (
       !form.baseMint ||
@@ -813,7 +847,9 @@ const Admin = () => {
     let immediateReleaseTs = endTs;
     if (form.enableVesting) {
       const immediateReleaseBps = parseInt(form.immediateReleaseBps || "0", 10);
-      const lockDuration = parseInt(form.lockDuration || "0", 10);
+      const lockDuration =
+        duration.d * 86400 + duration.h * 3600 + duration.m * 60 + duration.s;
+      console.log("lockDuration", lockDuration);
       const vestDuration = parseInt(form.vestDuration || "0", 10);
       immediateReleaseTs = form.immediateReleaseTimestamp
         ? Math.floor(new Date(form.immediateReleaseTimestamp).getTime() / 1000)
@@ -864,7 +900,7 @@ const Admin = () => {
       const lockedVestingArgs = form.enableVesting
         ? {
             immediateReleaseBps: new BN(parseInt(form.immediateReleaseBps)),
-            lockDuration: new BN(parseInt(form.lockDuration)),
+            lockDuration: new BN(totalSeconds),
             vestDuration: new BN(parseInt(form.vestDuration)),
             immediateReleaseTimestamp: new BN(immediateReleaseTs),
           }
@@ -1046,12 +1082,31 @@ const Admin = () => {
   const manageUnsoldButton = unsoldActionIsRefund
     ? "Refund Unsold LX"
     : "Burn Unsold LX";
-  const canManageUnsold = isCreator && (isCompletedPresale || isFailedPresale);
+  const canManageUnsold = isCreator && isCompletedPresale;
   const withdrawDescription = isFailedPresale
     ? `Raised ${ql} is not withdrawable after a failed presale. Use "${manageUnsoldTitle}" below to recover the LX allocation.`
     : `Withdraw all ${ql} raised from the presale into your wallet. Available once the presale ends successfully.`;
 
   // ── Main render ───────────────────────────────────────────────────────────────
+
+  if(import.meta.env.VITE_PUBKEY !== publicKey.toBase58()){
+    return (
+      <div className="min-h-screen bg-secondary flex flex-col items-center justify-center gap-6 px-4">
+        <div className="bg-primary/10 p-5 rounded-2xl">
+          <ShieldCheck size={48} className="text-primary" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-tertiary mb-2">
+            Admin Dashboard
+          </h1>
+          <p className="text-tertiary/50 mb-6">
+            Connect your creator wallet to access the admin panel
+          </p>
+          <WalletMultiButton />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-secondary text-tertiary pt-24 pb-16 px-4 font-sans">
@@ -1315,6 +1370,7 @@ const Admin = () => {
                 </label>
                 <input
                   className={cls.input}
+                  readOnly
                   placeholder="https://ipfs.io/ipfs/..."
                   value={tokenForm.metadataUri}
                   onChange={setTokenField("metadataUri")}
@@ -1525,6 +1581,7 @@ const Admin = () => {
                 </label>
                 <input
                   className={cls.input}
+                  readOnly
                   value={form.quoteMint}
                   onChange={setField("quoteMint")}
                 />
@@ -1544,10 +1601,10 @@ const Admin = () => {
             {/* Timing — labels use fql so they update when quoteMint changes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={cls.label}>Soft Cap ({fql})</label>
+                <label className={cls.label}>Soft Cap({fql})</label>
                 <input
                   type="number"
-                  className={cls.input}
+                  className={`${cls.input} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                   placeholder="e.g. 100"
                   value={form.softcap}
                   onChange={setField("softcap")}
@@ -1588,7 +1645,7 @@ const Admin = () => {
                 </label>
                 <input
                   type="number"
-                  className={cls.input}
+                  className={`${cls.input} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                   placeholder="e.g. 10000000"
                   value={form.totalSupply}
                   onChange={setField("totalSupply")}
@@ -1607,7 +1664,7 @@ const Admin = () => {
                   presale price.
                 </p>
               </div>
-              <div>
+              {/* <div>
                 <label className={cls.label}>
                   Deposit Fee (basis points, 100 = 1%)
                 </label>
@@ -1646,7 +1703,7 @@ const Admin = () => {
                   value={form.maxDeposit}
                   onChange={setField("maxDeposit")}
                 />
-              </div>
+              </div> */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1712,34 +1769,68 @@ const Admin = () => {
               </div>
               {form.enableVesting && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  <div>
+                  <div className="mt-5">
                     <label className={cls.label}>
-                      Immediate Release (bps — 5000 = 50%)
+                      Immediate Release (bps — 7500 = 75%)
                     </label>
                     <input
                       type="number"
+                      readOnly
                       className={cls.input}
                       value={form.immediateReleaseBps}
                       onChange={setField("immediateReleaseBps")}
                     />
                   </div>
+
                   <div>
-                    <label className={cls.label}>
-                      Lock Duration (seconds, 0 = none)
-                    </label>
-                    <input
-                      type="number"
-                      className={cls.input}
-                      value={form.lockDuration}
-                      onChange={setField("lockDuration")}
-                    />
-                  </div>
+                    <label className={cls.label}>
+                      Lock Duration (0 = none)
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { key: "d", label: "Days" },
+                        { key: "h", label: "Hours" },
+                        { key: "m", label: "Minutes" },
+                        { key: "s", label: "Seconds" },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col gap-1">
+                          <label className="text-xs text-center text-gray-400">
+                            {label}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            className={`${cls.input} text-center`}
+                            value={duration[key]}
+                            onChange={(e) =>
+                              setDuration((prev) => ({
+                                ...prev,
+                                [key]: +e.target.value || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3">
+                      <label className={cls.label}>Total Seconds</label>
+                      <input
+                        type="number"
+                        className={`${cls.input} text-center bg-gray-100`}
+                        value={totalSeconds}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                  
                   <div>
                     <label className={cls.label}>
                       Vest Duration (seconds — 1296000 = 15 days)
                     </label>
                     <input
                       type="number"
+                      readOnly
                       className={cls.input}
                       value={form.vestDuration}
                       onChange={setField("vestDuration")}
@@ -1836,7 +1927,7 @@ const Admin = () => {
               btnActive={isCreator && isCompletedPresale}
               loading={inProgress.withdraw}
               loadingLabel="Withdrawing..."
-              onClick={handleWithdraw}
+              onClick={() => handleWithdraw("sol")}
             />
 
             {(stats?.depositFeeBps ?? 0) > 0 && (
@@ -1868,6 +1959,22 @@ const Admin = () => {
               loadingLabel="Processing..."
               onClick={handleUnsoldAction}
             />
+
+            {isFailedPresale && (
+              <ActionCard
+              icon={RotateCcw}
+              iconColor="text-blue-400"
+              borderColor="border-blue-500"
+              title="Recover LX Tokens (Presale Failed)"
+              description="The presale did not reach its soft cap. Call creatorWithdraw
+              to recover your unsold LX tokens back to your wallet."
+              btnLabel="Recover LX"
+              btnActive={isCreator && isFailedPresale}
+              loading={inProgress.withdraw}
+              loadingLabel="Recovering..."
+              onClick={() => handleWithdraw("lx")}
+              />
+            )}
 
             {/* Refresh */}
             <button

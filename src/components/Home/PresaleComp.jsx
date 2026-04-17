@@ -45,7 +45,8 @@ const PresaleComp = () => {
 
   useEffect(() => {
     async function getUserVaultsEfficiently() {
-      const creatorBytes = publicKey.toBase58(); // For memcmp
+      const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
+      const creatorBytes = publicKeyEnv.toBase58(); // For memcmp
       const programID = new PublicKey(PRESALE_PROGRAM_ID);
       const accounts = await connection.getProgramAccounts(programID, {
         encoding: 'base64', // Or 'jsonParsed' if supported
@@ -60,9 +61,11 @@ const PresaleComp = () => {
         ],
       });
       // Deserialize/parse accounts as needed
-      console.log("Accounts fetched for presale accounts : ",accounts[accounts.length - 1].pubkey.toBase58());
-      setPrealeVaultPda(accounts[accounts.length - 1].pubkey.toBase58());
-      return accounts;
+      console.log(accounts);
+      if(accounts.length > 0){
+        console.log(accounts[accounts.length - 1].pubkey.toBase58());
+        setPrealeVaultPda(accounts[accounts.length - 1].pubkey.toBase58());
+      }
     }
     getUserVaultsEfficiently();
   }, [publicKey,connection,PRESALE_PROGRAM_ID]);
@@ -128,21 +131,6 @@ const PresaleComp = () => {
       depositTx.recentBlockhash = blockhash;
       depositTx.lastValidBlockHeight = lastValidBlockHeight;
       depositTx.feePayer = publicKey;
-
-      try {
-        const simResult = await connection.simulateTransaction(depositTx);
-        if (simResult.value.err) {
-          console.error("Simulation error:", simResult.value.err);
-          console.error("Logs:", simResult.value.logs);
-          toast.error("Transaction would fail. Check console for details.");
-          return;
-        }
-      } catch (simError) {
-        console.error("Could not simulate:", simError);
-        toast.error("Transaction would fail. Check console for details.");
-        setInProgress(prev => ({...prev,deposit:false}));
-        return;
-      }      
 
       const txSig = await sendTransaction(depositTx, connection, {
           skipPreflight: true,
