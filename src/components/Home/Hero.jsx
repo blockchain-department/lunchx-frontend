@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import CountDown from "./Countdown";
+import CountDown from "./CountDown";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from "../../utilities/config";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Presale } from '@meteora-ag/presale';

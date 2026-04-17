@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
@@ -35,6 +35,7 @@ const PresaleComp = () => {
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
+  const fetchingPrsaleData = useRef(false);
 
   const inProgressGlobal = inProgress.deposit || inProgress.withdraw || inProgress.claim || inProgress.refund;
 
@@ -279,6 +280,10 @@ const PresaleComp = () => {
 
   const fetchClaimableAmount = async () => {
     try {
+
+      if(fetchingPrsaleData.current) return;
+      fetchingPrsaleData.current = true;
+
       const presaleInstance = await Presale.create(
         connection,
         new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
@@ -366,10 +371,12 @@ const PresaleComp = () => {
       const totalSol = presaleRegisteries[0].presaleTotalDeposit.toString() / Math.pow(10, decimals);
       setTotalDepositedSol(totalSol);
 
+      fetchingPrsaleData.current = false;
+
       
     } catch (error) {
       console.log(error);
-      
+      fetchingPrsaleData.current = false;
     }
   }
 
@@ -479,6 +486,12 @@ const PresaleComp = () => {
             <span className="text-tertiary/60"> — minimum cap was not reached. Your full deposit is available for refund.</span>
           </div>
         )}
+        {presaleProgress === 2 && (
+          <div className="mb-6 bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center text-sm">
+            <span className="text-green-400 font-semibold">Presale Sucessfull</span>
+            <span className="text-tertiary/60"> — {claimedLx == totalClaimableLx ? 'You have claimed all your LX tokens.' : 'You can now claim your LX tokens.'}</span>
+          </div>
+        )}
 
         {/* Tabs — only visible during Ongoing (state 1) */}
         <div className="flex justify-center gap-4 mb-8">
@@ -575,7 +588,7 @@ const PresaleComp = () => {
           </button>}
 
           {/* Claim tokens — Completed (state 2), gated by canClaim() which checks vestingStartTime */}
-          {(isConnected && presaleProgress === 2 && canClaim) && <button
+          {(isConnected && presaleProgress === 2 && claimableLx > 0) && <button
             className={`${inProgress.claim || claimableLx === 0 || depositedSol === 0 || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={() => claimTokens()}
             disabled={inProgress.claim || claimableLx === 0 || depositedSol === 0 || inProgressGlobal}
