@@ -35,21 +35,42 @@ const TimeBlock = ({ value, label }) => {
   );
 };
 
-const CountDown = ({ remainingTime = 0 }) => {
-  const { tick, setTime, timeOver,time , setTimeOver } = useTimeStore();
+const CountDown = ({ remainingTime = 0 , type}) => {
+  const { setTimeOver, setVestingOver , presaleProgress, setStarted } = useTimeStore();
+  const [time,setTime] = useState(remainingTime);
 
   useEffect(() => {
-
-      if (!remainingTime) return;
-
-      setTime(remainingTime);
-
-      const interval = setInterval(() => {
-          tick();
-      }, 1000);
-
-      return () => clearInterval(interval);
+    setTime(remainingTime);
   }, [remainingTime]);
+
+
+  useEffect(() => {
+  if (!remainingTime) return;
+
+  const interval = setInterval(() => {
+    setTime(prevTime => prevTime > 0 ? prevTime - 1 : 0);
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [remainingTime]);
+
+// 👇 Separate effect to handle "time over"
+useEffect(() => {
+  if (time == 1) {
+    if (type === "presale") setTimeOver(true);
+    // ✅ Only fire if time actually counted down, not if it arrived as 1
+    if (type === "vesting" && (presaleProgress == 2 || presaleProgress == 3)) {
+      setVestingOver(true);
+    }
+    if(type === "presale-not-started"){
+      setStarted(true);
+    }
+  }
+  if(type === "vesting" && presaleProgress == 3){
+    setVestingOver(true);
+    setTime(0);
+  }
+}, [time, type]);
 
   const days = Math.floor(time / 86400);
   const hours = Math.floor((time % 86400) / 3600);

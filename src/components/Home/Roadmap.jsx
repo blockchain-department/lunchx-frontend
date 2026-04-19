@@ -116,6 +116,7 @@ const Roadmap = () => {
           <div className="space-y-8 sm:space-y-12">
             {phases.map((phase, i) => (
               <div
+                key={i}
                 className={`flex flex-col-reverse lg:flex-row items-center gap-4 ${
                   i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
                 }`}

@@ -1,13 +1,19 @@
+<<<<<<< HEAD
 import { useState, useEffect, useCallback, createElement } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+=======
+import { useState, useEffect } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 import {
   PublicKey,
   Keypair,
   Transaction,
   SystemProgram,
   ComputeBudgetProgram,
-} from '@solana/web3.js';
+} from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
   MINT_SIZE,
@@ -17,10 +23,11 @@ import {
   createMintToInstruction,
   createSetAuthorityInstruction,
   AuthorityType,
-} from '@solana/spl-token';
+} from "@solana/spl-token";
 import {
   createCreateMetadataAccountV3Instruction,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
+<<<<<<< HEAD
 } from '@metaplex-foundation/mpl-token-metadata';
 import { Presale, derivePresale, Rounding, calculateMaximumQuoteAmountForPresaleSupply } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
@@ -36,8 +43,49 @@ import {
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, TOKEN_METADATA_URI, network } from '../utilities/config';
 import decimalToBN from '../utilities/decimalToBN';
 import formatSolanaError from '../utilities/formatSolanaError';
+=======
+} from "@metaplex-foundation/mpl-token-metadata";
+import {
+  Presale,
+  derivePresale,
+  Rounding,
+  calculateMaximumQuoteAmountForPresaleSupply,
+} from "@meteora-ag/presale";
+import { BN } from "bn.js";
+import Decimal from "decimal.js";
+import toast from "react-hot-toast";
+import {
+  Loader2,
+  ShieldCheck,
+  BarChart3,
+  Settings,
+  PlusCircle,
+  Download,
+  Coins,
+  Users,
+  TrendingUp,
+  Lock,
+  Flame,
+  RotateCcw,
+  DollarSign,
+  AlertCircle,
+  Copy,
+  CheckCircle2,
+  RefreshCw,
+  PackagePlus,
+  Zap,
+  XCircle,
+  Circle,
+  MinusCircle,
+} from "lucide-react";
+import {
+  PRESALE_PROGRAM_ID,
+  PRESALE_VAULT_PDA,
+  TOKEN_METADATA_URI,
+} from "../utilities/config";
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 
-const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+const WSOL_MINT = "So11111111111111111111111111111111111111112";
 
 // Decimal places for known quote mints. Used to convert on-chain smallest-unit amounts
 // (presaleMaximumCap, presaleTotalDeposit, presaleMinimumCap) to display values.
@@ -46,28 +94,57 @@ const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 // NOTE: this map is for the *quote* token only. Base-token supply still assumes 9 decimals
 // (dec = 1e9 in fetchStats) — add a separate base-mint decimal lookup if that ever changes.
 const KNOWN_QUOTE_DECIMALS = {
-  [WSOL_MINT]:                                         9,  // Wrapped SOL
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v':    6,  // USDC
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':     6,  // USDT
+  [WSOL_MINT]: 9, // Wrapped SOL
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 6, // USDC
+  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 6, // USDT
 };
 // Maps PresaleProgress enum (0–3) to display strings.
 // SDK: NotStarted=0, Ongoing=1, Completed=2, Failed=3
-const STATE_LABELS = ['Not Started', 'Ongoing', 'Completed', 'Failed'];
-const STATE_COLORS = ['text-tertiary/50', 'text-green-400', 'text-blue-400', 'text-red-400'];
+const STATE_LABELS = ["Not Started", "Ongoing", "Completed", "Failed"];
+const STATE_COLORS = [
+  "text-tertiary/50",
+  "text-green-400",
+  "text-blue-400",
+  "text-red-400",
+];
 
 const cls = {
-  input: 'w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary transition-colors placeholder:text-tertiary/40',
-  label: 'block text-xs text-tertiary/60 mb-1.5',
-  card: 'bg-tertiary/5 border border-tertiary/10 rounded-2xl p-6',
+  input:
+    "w-full bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3 text-sm outline-none transition-colors placeholder:text-tertiary/40",
+  label: "block text-xs text-tertiary/60 mb-1.5",
+  card: "bg-tertiary/5 border border-tertiary/10 rounded-2xl p-6",
 };
 
 // Token-2022 mint + metadata init often exceeds the default ~200k CU; Phantom surfaces that as "Unexpected error".
 const DEPLOY_COMPUTE_UNITS = 600_000;
 const DEPLOY_MIN_FEE_BUFFER_LAMPORTS = 20_000_000; // 0.02 SOL buffer for tx fees/retries
+<<<<<<< HEAD
 const CLUSTER_GENESIS_HASHES = {
   devnet: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
   'mainnet-beta': '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
 };
+=======
+
+/** Pull useful text from WalletSendTransactionError / nested SendTransactionError (Phantom often wraps the real reason). */
+function formatSolanaSendError(err) {
+  const inner = err?.error?.error ?? err?.error ?? err;
+  const logs = inner?.transactionLogs ?? inner?.logs;
+  if (Array.isArray(logs) && logs.length) {
+    return logs.slice(-10).join(" · ");
+  }
+  if (inner?.transactionMessage) return String(inner.transactionMessage);
+  if (
+    inner?.message &&
+    !/^unexpected error$/i.test(String(inner.message).trim())
+  ) {
+    return inner.message;
+  }
+  return (
+    err?.message ??
+    "Check devnet SOL for rent + fees, wallet on Devnet, then approve each signature."
+  );
+}
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 
 function lamportsToSol(lamports) {
   return Number(lamports || 0) / 1e9;
@@ -75,70 +152,68 @@ function lamportsToSol(lamports) {
 
 // Step status: 'idle' | 'pending' | 'done' | 'error' | 'skipped'
 const INITIAL_DEPLOY_STEPS = [
-  { id: 'mint',     label: 'Create mint account'                      },
-  { id: 'metadata', label: 'Set token metadata (name / symbol / URI)' },
-  { id: 'supply',   label: 'Create token account & mint full supply'  },
-  { id: 'revoke',   label: 'Disable mint authority (fixed supply)'    },
+  { id: "mint", label: "Create mint account" },
+  { id: "metadata", label: "Set token metadata (name / symbol / URI)" },
+  { id: "supply", label: "Create token account & mint full supply" },
+  { id: "revoke", label: "Disable mint authority (fixed supply)" },
 ];
 
 const INITIAL_TOKEN_FORM = {
-  tokenName:   'LaunchX Coin',
-  tokenSymbol: 'LX',
+  tokenName: "LaunchX Coin",
+  tokenSymbol: "LX",
   metadataUri: TOKEN_METADATA_URI,
-  mintSupply:  '4200000000',
-  decimals:    '9',
-  revokeMint:  true,
+  mintSupply: "4200000000",
+  decimals: "9",
+  revokeMint: true,
 };
 
-const FIXED_PRESALE_PRICE = new Decimal('51375').div(new Decimal('1050000000'));
+const FIXED_PRESALE_PRICE = new Decimal("51375").div(new Decimal("1050000000"));
 
 function toDatetimeLocalValue(date) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-  ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const pad = (value) => String(value).padStart(2, "0");
+  return (
+    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join(
+      "-",
+    ) + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
 }
 
 function createInitialForm() {
   const start = new Date(Date.now() + 2 * 60 * 1000);
-  // Interpreted in the user's local timezone inside the datetime-local input.
-  const end = new Date(2026, 3, 20, 4, 20);
 
   return {
-    baseMint: '',
+    baseMint: "",
     quoteMint: WSOL_MINT,
-    presaleType: 'fixed',
-    hardcap: '51375',
-    softcap: '1250',
+    presaleType: "fixed",
+    hardcap: "51375",
+    softcap: "1250",
     startTime: toDatetimeLocalValue(start),
-    endTime: toDatetimeLocalValue(end),
-    totalSupply: '1050000000',
-    tokenDecimals: '9',
-    minDeposit: '0',
-    maxDeposit: '',
-    depositFeeBps: '0',
-    whitelistMode: '0',
-    unsoldTokenAction: '0',
+    endTime: toDatetimeLocalValue(start),
+    totalSupply: "1050000000",
+    tokenDecimals: "9",
+    minDeposit: "0",
+    maxDeposit: "",
+    depositFeeBps: "0",
+    whitelistMode: "0",
+    unsoldTokenAction: "0",
     enableVesting: true,
-    immediateReleaseBps: '7500',
-    lockDuration: '0',
-    vestDuration: '1296000',
-    immediateReleaseTimestamp: toDatetimeLocalValue(end),
+    immediateReleaseBps: "7500",
+    lockDuration: "",
+    vestDuration: "0",
+    immediateReleaseTimestamp: toDatetimeLocalValue(start),
   };
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function shortAddr(addr) {
-  if (!addr) return '';
+  if (!addr) return "";
   return `${addr.slice(0, 6)}...${addr.slice(-6)}`;
 }
 
 /** Returns 'SOL' for WSOL, otherwise a truncated mint address. Never hard-codes "SOL". */
 function quoteLabel(mintAddr) {
-  if (!mintAddr || mintAddr === WSOL_MINT) return 'SOL';
+  if (!mintAddr || mintAddr === WSOL_MINT) return "SOL";
   return shortAddr(mintAddr);
 }
 
@@ -147,10 +222,11 @@ function getQuoteMintDecimals(mintAddr) {
 }
 
 function smallestUnitAsDecimalString(decimals) {
-  if (decimals <= 0) return '1';
-  return `0.${'0'.repeat(decimals - 1)}1`;
+  if (decimals <= 0) return "1";
+  return `0.${"0".repeat(decimals - 1)}1`;
 }
 
+<<<<<<< HEAD
 function isValidPublicKeyString(value) {
   try {
     new PublicKey(String(value ?? '').trim());
@@ -158,6 +234,21 @@ function isValidPublicKeyString(value) {
   } catch {
     return false;
   }
+=======
+function decimalToBN(value, decimals = 0) {
+  const normalized = String(value ?? "0").trim();
+  if (!/^\d+(\.\d+)?$/.test(normalized)) {
+    throw new Error(`Invalid numeric value: ${value}`);
+  }
+
+  const [wholePart, fractionPart = ""] = normalized.split(".");
+  const paddedFraction = (fractionPart + "0".repeat(decimals)).slice(
+    0,
+    decimals,
+  );
+  const combined = `${wholePart}${paddedFraction}`.replace(/^0+(?=\d)/, "");
+  return new BN(combined || "0", 10);
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 }
 
 function StatCard({ label, value, icon: Icon }) {
@@ -172,7 +263,18 @@ function StatCard({ label, value, icon: Icon }) {
   );
 }
 
-function ActionCard({ icon: Icon, iconColor = 'text-primary', borderColor = 'border-primary', title, description, btnLabel, btnActive, loading, loadingLabel, onClick }) {
+function ActionCard({
+  icon: Icon,
+  iconColor = "text-primary",
+  borderColor = "border-primary",
+  title,
+  description,
+  btnLabel,
+  btnActive,
+  loading,
+  loadingLabel,
+  onClick,
+}) {
   return (
     <div className={cls.card}>
       <div className="flex items-start gap-4">
@@ -186,9 +288,17 @@ function ActionCard({ icon: Icon, iconColor = 'text-primary', borderColor = 'bor
             onClick={onClick}
             disabled={!btnActive || loading}
             className={`px-6 py-3 rounded-full font-semibold text-sm border ${borderColor} ${iconColor} bg-secondary/20 flex items-center gap-2 transition-all
-              ${!btnActive || loading ? 'cursor-not-allowed opacity-40' : 'hover:scale-[1.02] cursor-pointer active:scale-[0.98]'}`}
+              ${!btnActive || loading ? "cursor-not-allowed opacity-40" : "hover:scale-[1.02] cursor-pointer active:scale-[0.98]"}`}
           >
+<<<<<<< HEAD
             {loading ? <Loader2 size={16} className="animate-spin" /> : createElement(Icon, { size: 16 })}
+=======
+            {loading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Icon size={16} />
+            )}
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
             {loading ? loadingLabel : btnLabel}
           </button>
         </div>
@@ -201,15 +311,16 @@ function ActionCard({ icon: Icon, iconColor = 'text-primary', borderColor = 'bor
 
 const Admin = () => {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, signTransaction, connected } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, connected } =
+    useWallet();
 
-  const [activeTab, setActiveTab] = useState('stats');
+  const [activeTab, setActiveTab] = useState("stats");
   const [presaleInstance, setPresaleInstance] = useState(null);
   const [stats, setStats] = useState(null);
   const [isCreator, setIsCreator] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [newVaultAddress, setNewVaultAddress] = useState('');
+  const [newVaultAddress, setNewVaultAddress] = useState("");
   // null  → use PRESALE_VAULT_PDA from env (default)
   // string → use this PDA (set immediately after a successful Create)
   const [statsVaultOverride, setStatsVaultOverride] = useState(null);
@@ -224,15 +335,31 @@ const Admin = () => {
   const [form, setForm] = useState(() => createInitialForm());
 
   // ── Token deploy state ──────────────────────────────────────────────────────
-  const [tokenForm, setTokenForm]     = useState(INITIAL_TOKEN_FORM);
+  const [tokenForm, setTokenForm] = useState(INITIAL_TOKEN_FORM);
   const [deploySteps, setDeploySteps] = useState(
-    INITIAL_DEPLOY_STEPS.map(s => ({ ...s, status: 'idle' }))
+    INITIAL_DEPLOY_STEPS.map((s) => ({ ...s, status: "idle" })),
   );
-  const [deployedMint, setDeployedMint] = useState('');
-  const [isDeploying,  setIsDeploying]  = useState(false);
+  const [deployedMint, setDeployedMint] = useState("");
+  const [isDeploying, setIsDeploying] = useState(false);
 
   const inProgressAny = Object.values(inProgress).some(Boolean);
 
+<<<<<<< HEAD
+=======
+  // ── Effects ─────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchStats();
+    } else {
+      setStats(null);
+      setIsCreator(false);
+      setPresaleInstance(null);
+      setStatsVaultOverride(null); // revert to env vault on disconnect
+    }
+  }, [connected, publicKey?.toBase58()]);
+
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
   // ── Data fetching ────────────────────────────────────────────────────────────
 
   /**
@@ -242,8 +369,39 @@ const Admin = () => {
    *   window before setStatsVaultOverride has settled. When null, reads
    *   statsVaultOverride state, then falls back to env PRESALE_VAULT_PDA.
    */
+<<<<<<< HEAD
   const fetchStats = useCallback(async (explicitVault = null) => {
     const targetVault = explicitVault ?? statsVaultOverride ?? PRESALE_VAULT_PDA;
+=======
+  const fetchStats = async (explicitVault = null) => {
+
+    const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
+    const creatorBytes = publicKeyEnv.toBase58(); // For memcmp
+    const programID = new PublicKey(PRESALE_PROGRAM_ID);
+    const accounts = await connection.getProgramAccounts(programID, {
+      encoding: 'base64', // Or 'jsonParsed' if supported
+      filters: [
+        // { dataSize: 1234 }, // Get from Solscan/raw data
+        {
+          memcmp: {
+            offset: 8, // Adjust: 0=discriminator (8 bytes), 8=creator (32 bytes)
+            bytes: creatorBytes,
+          },
+        },
+      ],
+    });
+
+    let targetVault = null;
+
+    // Deserialize/parse accounts as needed
+    console.log(accounts);
+    if(accounts.length > 0){
+      console.log(accounts[accounts.length - 1].pubkey.toBase58());
+      targetVault = accounts[accounts.length - 1].pubkey.toBase58();
+    }
+
+
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     if (!targetVault) {
       setStats(null);
       setIsCreator(false);
@@ -257,7 +415,9 @@ const Admin = () => {
     } catch (err) {
       if (explicitVault || statsVaultOverride) throw err;
       if (import.meta.env.DEV) {
-        console.warn(`[Admin] Skipping stats fetch because PRESALE_VAULT_PDA is invalid: ${targetVault}`);
+        console.warn(
+          `[Admin] Skipping stats fetch because PRESALE_VAULT_PDA is invalid: ${targetVault}`,
+        );
       }
       setStats(null);
       setIsCreator(false);
@@ -270,48 +430,50 @@ const Admin = () => {
       const inst = await Presale.create(
         connection,
         targetVaultPubkey,
-        new PublicKey(PRESALE_PROGRAM_ID)
+        new PublicKey(PRESALE_PROGRAM_ID),
       );
 
-      const parsed    = inst.getParsedPresale();
+      const parsed = inst.getParsedPresale();
       const registries = await parsed.getAllPresaleRegistries();
       const allEscrows = await inst.getEscrowsByPresale();
-      const state      = parsed.getPresaleProgressState();
+      const state = parsed.getPresaleProgressState();
 
       // SDK decodes presale account with `owner` (creator wallet). Older code used `creator`.
       const creatorPk =
         parsed.presaleAccount.owner ?? parsed.presaleAccount.creator;
-      const reg       = registries[0];
+      const reg = registries[0];
 
       // Read quote mint first — needed to pick the right divisor for quote-denominated fields.
-      const quoteMint = parsed.presaleAccount.quoteMint?.toBase58() ?? WSOL_MINT;
+      const quoteMint =
+        parsed.presaleAccount.quoteMint?.toBase58() ?? WSOL_MINT;
       if (import.meta.env.DEV && !(quoteMint in KNOWN_QUOTE_DECIMALS)) {
         console.warn(
-          `[Admin] Unknown quote mint ${quoteMint} — add it to KNOWN_QUOTE_DECIMALS for correct display. Falling back to 9 decimals.`
+          `[Admin] Unknown quote mint ${quoteMint} — add it to KNOWN_QUOTE_DECIMALS for correct display. Falling back to 9 decimals.`,
         );
       }
       // quoteDec: divisor for presaleMaximumCap, presaleTotalDeposit, presaleMinimumCap
       //           (all denominated in quote-token smallest units on-chain)
-      const quoteDec  = Math.pow(10, KNOWN_QUOTE_DECIMALS[quoteMint] ?? 9);
+      const quoteDec = Math.pow(10, KNOWN_QUOTE_DECIMALS[quoteMint] ?? 9);
       // dec: divisor for presaleSupply (base token). Assumes base mint decimals = 9.
       // If your base mint uses different decimals, add a base-mint decimal lookup here —
       // KNOWN_QUOTE_DECIMALS does not cover the base token.
-      const dec       = 1e9;
+      const dec = 1e9;
 
-      const hardcap   = Number(reg.presaleMaximumCap)                         / quoteDec;
-      const deposited = Number(reg.presaleTotalDeposit)                        / quoteDec;
-      const supply    = Number(reg.presaleSupply ?? 0)                         / dec;
-      const softcap   = Number(parsed.presaleAccount.presaleMinimumCap ?? 0)   / quoteDec;
-      const endTs     = Number(parsed.presaleAccount.presaleEndTime)   * 1000;
-      const startTs   = Number(parsed.presaleAccount.presaleStartTime) * 1000;
+      const hardcap = Number(reg.presaleMaximumCap) / quoteDec;
+      const deposited = Number(reg.presaleTotalDeposit) / quoteDec;
+      const supply = Number(reg.presaleSupply ?? 0) / dec;
+      const softcap =
+        Number(parsed.presaleAccount.presaleMinimumCap ?? 0) / quoteDec;
+      const endTs = Number(parsed.presaleAccount.presaleEndTime) * 1000;
+      const startTs = Number(parsed.presaleAccount.presaleStartTime) * 1000;
 
-      const creatorStr = creatorPk?.toBase58?.() ?? '';
+      const creatorStr = creatorPk?.toBase58?.() ?? "";
       if (!creatorStr) {
-        throw new Error('Presale account has no owner pubkey');
+        throw new Error("Presale account has no owner pubkey");
       }
 
       setStats({
-        creator:      creatorStr,
+        creator: creatorStr,
         hardcap,
         softcap,
         deposited,
@@ -322,18 +484,21 @@ const Admin = () => {
         endTs,
         startTs,
         quoteMint,
-        activeVault:  targetVault,
-        progress:     hardcap > 0 ? (deposited / hardcap) * 100 : 0,
+        activeVault: targetVault,
+        progress: hardcap > 0 ? (deposited / hardcap) * 100 : 0,
       });
 
       setPresaleInstance(inst);
 
-      setIsCreator(
-        !!(publicKey && creatorStr === publicKey.toBase58())
-      );
+      setIsCreator(!!(publicKey && creatorStr === publicKey.toBase58()));
     } catch (err) {
+<<<<<<< HEAD
       console.error(err);
       toast.error(formatSolanaError(err));
+=======
+      console.log(err);
+      toast.error("Failed to load presale data");
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     } finally {
       setLoadingStats(false);
     }
@@ -364,7 +529,7 @@ const Admin = () => {
 
   const sendTx = async (tx, extraSigners = []) => {
     if (!publicKey) {
-      const msg = 'Wallet not ready. Reconnect your wallet and try again.';
+      const msg = "Wallet not ready. Reconnect your wallet and try again.";
       toast.error(msg);
       throw new Error(msg);
     }
@@ -374,28 +539,34 @@ const Admin = () => {
     );
     if (!hasComputeIx) {
       tx.instructions.unshift(
-        ComputeBudgetProgram.setComputeUnitLimit({ units: DEPLOY_COMPUTE_UNITS }),
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: DEPLOY_COMPUTE_UNITS,
+        }),
       );
     }
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-    tx.recentBlockhash      = blockhash;
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
     tx.lastValidBlockHeight = lastValidBlockHeight;
-    tx.feePayer             = publicKey;
+    tx.feePayer = publicKey;
 
     let sig;
-    if (typeof signTransaction === 'function') {
+    if (typeof signTransaction === "function") {
       if (extraSigners.length) tx.partialSign(...extraSigners);
       const signedTx = await signTransaction(tx);
       try {
         sig = await connection.sendRawTransaction(signedTx.serialize(), {
           skipPreflight: false,
           maxRetries: 3,
-          preflightCommitment: 'confirmed',
+          preflightCommitment: "confirmed",
         });
       } catch (sendErr) {
         // Transaction already landed on a prior attempt — treat as success.
-        if (typeof sendErr?.message === 'string' && sendErr.message.includes('already been processed')) {
+        if (
+          typeof sendErr?.message === "string" &&
+          sendErr.message.includes("already been processed")
+        ) {
           return null;
         }
         throw sendErr;
@@ -405,11 +576,14 @@ const Admin = () => {
         sig = await sendTransaction(tx, connection, {
           skipPreflight: false,
           maxRetries: 3,
-          preflightCommitment: 'confirmed',
+          preflightCommitment: "confirmed",
           signers: extraSigners,
         });
       } catch (sendErr) {
-        if (typeof sendErr?.message === 'string' && sendErr.message.includes('already been processed')) {
+        if (
+          typeof sendErr?.message === "string" &&
+          sendErr.message.includes("already been processed")
+        ) {
           return null;
         }
         throw sendErr;
@@ -418,13 +592,14 @@ const Admin = () => {
 
     await connection.confirmTransaction(
       { signature: sig, blockhash, lastValidBlockHeight },
-      'finalized'
+      "finalized",
     );
     return sig;
   };
 
   // ── Admin actions ────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
   const handleWithdraw = async () => {
     setInProgress(p => ({ ...p, withdraw: true }));
     try {
@@ -439,38 +614,70 @@ const Admin = () => {
       setInProgress(p => ({ ...p, withdraw: false }));
     }
   };
+=======
+  const handleWithdraw = async (type) => {
+setInProgress((p) => ({ ...p, withdraw: true }));
+try {
+const tx = await presaleInstance.creatorWithdraw({ creator: publicKey });
+await sendTx(tx);
+if (type === "sol") {
+toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
+} else if (type === "lx") {
+toast.success("LX tokens withdrawn successfully");
+}
+fetchStats();
+} catch (err) {
+console.log(err);
+toast.error("Withdrawal failed");
+} finally {
+setInProgress((p) => ({ ...p, withdraw: false }));
+}
+};
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 
   const handleCollectFee = async () => {
-    setInProgress(p => ({ ...p, collectFee: true }));
+    setInProgress((p) => ({ ...p, collectFee: true }));
     try {
       const tx = await presaleInstance.creatorCollectFee();
       await sendTx(tx);
-      toast.success('Fees collected');
+      toast.success("Fees collected");
     } catch (err) {
+<<<<<<< HEAD
       console.error(err);
       toast.error(formatSolanaError(err));
+=======
+      console.log(err);
+      toast.error("Fee collection failed");
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     } finally {
-      setInProgress(p => ({ ...p, collectFee: false }));
+      setInProgress((p) => ({ ...p, collectFee: false }));
     }
   };
 
   const handleUnsoldAction = async () => {
-    if (!(stats?.state === 2 || stats?.state === 3)) {
-      toast.error('Unsold token actions are only available after the presale ends');
+    if (stats?.state !== 2) {
+      toast.error(
+        "Unsold token actions are only available after the presale ends",
+      );
       return;
     }
 
-    setInProgress(p => ({ ...p, unsoldAction: true }));
+    setInProgress((p) => ({ ...p, unsoldAction: true }));
     try {
       const tx = await presaleInstance.performUnsoldBaseTokenAction(publicKey);
       await sendTx(tx);
-      toast.success('Unsold token action completed');
+      toast.success("Unsold token action completed");
       fetchStats();
     } catch (err) {
+<<<<<<< HEAD
       console.error(err);
       toast.error(formatSolanaError(err));
+=======
+      console.log(err);
+      toast.error("Action failed");
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     } finally {
-      setInProgress(p => ({ ...p, unsoldAction: false }));
+      setInProgress((p) => ({ ...p, unsoldAction: false }));
     }
   };
 
@@ -478,75 +685,90 @@ const Admin = () => {
 
   /** Mark a single step by id; leave others unchanged. */
   const setStepStatus = (id, status) =>
-    setDeploySteps(prev => prev.map(s => (s.id === id ? { ...s, status } : s)));
+    setDeploySteps((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status } : s)),
+    );
 
   const handleDeployToken = async () => {
     if (!publicKey) {
-      toast.error('Wallet not ready. Reconnect your wallet and try again.');
+      toast.error("Wallet not ready. Reconnect your wallet and try again.");
       return;
     }
 
-    const { tokenName, tokenSymbol, metadataUri, mintSupply, decimals, revokeMint } = tokenForm;
+    const {
+      tokenName,
+      tokenSymbol,
+      metadataUri,
+      mintSupply,
+      decimals,
+      revokeMint,
+    } = tokenForm;
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !mintSupply) {
-      toast.error('Name, symbol, and supply are required');
+      toast.error("Name, symbol, and supply are required");
       return;
     }
     if (parseFloat(mintSupply) <= 0) {
-      toast.error('Supply must be greater than 0');
+      toast.error("Supply must be greater than 0");
       return;
     }
 
     setIsDeploying(true);
-    setDeployedMint('');
+    setDeployedMint("");
 
     // Reset steps — mark revoke as skipped upfront if not requested
-    setDeploySteps(INITIAL_DEPLOY_STEPS.map(s => ({
-      ...s,
-      status: s.id === 'mint' ? 'pending'
-            : s.id === 'revoke' && !revokeMint ? 'skipped'
-            : 'idle',
-    })));
+    setDeploySteps(
+      INITIAL_DEPLOY_STEPS.map((s) => ({
+        ...s,
+        status:
+          s.id === "mint"
+            ? "pending"
+            : s.id === "revoke" && !revokeMint
+              ? "skipped"
+              : "idle",
+      })),
+    );
 
     const mintKeypair = Keypair.generate();
-    const dec         = parseInt(decimals || '9');
+    const dec = parseInt(decimals || "9");
 
     try {
       // ── Tx 1: Create mint account (standard SPL Token) ─────────────────────
-      const lamports = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
-      const walletBalance = await connection.getBalance(publicKey, 'confirmed');
+      const lamports =
+        await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+      const walletBalance = await connection.getBalance(publicKey, "confirmed");
       const neededLamports = lamports + DEPLOY_MIN_FEE_BUFFER_LAMPORTS;
       if (walletBalance < neededLamports) {
         throw new Error(
-          `Insufficient SOL for deployment. Need ~${lamportsToSol(neededLamports).toFixed(4)} SOL, have ${lamportsToSol(walletBalance).toFixed(4)} SOL.`
+          `Insufficient SOL for deployment. Need ~${lamportsToSol(neededLamports).toFixed(4)} SOL, have ${lamportsToSol(walletBalance).toFixed(4)} SOL.`,
         );
       }
 
       const tx1 = new Transaction().add(
         SystemProgram.createAccount({
-          fromPubkey:       publicKey,
+          fromPubkey: publicKey,
           newAccountPubkey: mintKeypair.publicKey,
-          space:            MINT_SIZE,
+          space: MINT_SIZE,
           lamports,
-          programId:        TOKEN_PROGRAM_ID,
+          programId: TOKEN_PROGRAM_ID,
         }),
         createInitializeMintInstruction(
           mintKeypair.publicKey,
           dec,
           publicKey,
-          null,             // freeze authority — null = disabled
+          null, // freeze authority — null = disabled
           TOKEN_PROGRAM_ID,
         ),
       );
 
       await sendTx(tx1, [mintKeypair]);
-      setStepStatus('mint', 'done');
-      setStepStatus('metadata', 'pending');
+      setStepStatus("mint", "done");
+      setStepStatus("metadata", "pending");
 
       // ── Tx 2: Create Metaplex metadata account ─────────────────────────────
       const [metadataPDA] = PublicKey.findProgramAddressSync(
         [
-          Buffer.from('metadata'),
+          Buffer.from("metadata"),
           TOKEN_METADATA_PROGRAM_ID.toBuffer(),
           mintKeypair.publicKey.toBuffer(),
         ],
@@ -556,24 +778,24 @@ const Admin = () => {
       const tx2 = new Transaction().add(
         createCreateMetadataAccountV3Instruction(
           {
-            metadata:        metadataPDA,
-            mint:            mintKeypair.publicKey,
-            mintAuthority:   publicKey,
-            payer:           publicKey,
+            metadata: metadataPDA,
+            mint: mintKeypair.publicKey,
+            mintAuthority: publicKey,
+            payer: publicKey,
             updateAuthority: publicKey,
           },
           {
             createMetadataAccountArgsV3: {
               data: {
-                name:                 tokenName.trim(),
-                symbol:               tokenSymbol.trim().toUpperCase(),
-                uri:                  metadataUri.trim(),
+                name: tokenName.trim(),
+                symbol: tokenSymbol.trim().toUpperCase(),
+                uri: metadataUri.trim(),
                 sellerFeeBasisPoints: 0,
-                creators:             null,
-                collection:           null,
-                uses:                 null,
+                creators: null,
+                collection: null,
+                uses: null,
               },
-              isMutable:         true,
+              isMutable: true,
               collectionDetails: null,
             },
           },
@@ -581,8 +803,8 @@ const Admin = () => {
       );
 
       await sendTx(tx2);
-      setStepStatus('metadata', 'done');
-      setStepStatus('supply', 'pending');
+      setStepStatus("metadata", "done");
+      setStepStatus("supply", "pending");
 
       // ── Tx 2: Create ATA + mint full supply ────────────────────────────────
       const ata = getAssociatedTokenAddressSync(
@@ -593,7 +815,8 @@ const Admin = () => {
       );
 
       // Use BigInt to safely handle supplies that overflow JS safe-integer range
-      const supplyRaw = BigInt(Math.round(parseFloat(mintSupply))) * (BigInt(10) ** BigInt(dec));
+      const supplyRaw =
+        BigInt(Math.round(parseFloat(mintSupply))) * BigInt(10) ** BigInt(dec);
 
       const tx3 = new Transaction().add(
         createAssociatedTokenAccountInstruction(
@@ -614,35 +837,39 @@ const Admin = () => {
       );
 
       await sendTx(tx3);
-      setStepStatus('supply', 'done');
+      setStepStatus("supply", "done");
 
       // ── Tx 4 (optional): Revoke mint authority ─────────────────────────────
       if (revokeMint) {
-        setStepStatus('revoke', 'pending');
+        setStepStatus("revoke", "pending");
         const tx4 = new Transaction().add(
           createSetAuthorityInstruction(
             mintKeypair.publicKey,
             publicKey,
             AuthorityType.MintTokens,
-            null,           // null = remove authority permanently
+            null, // null = remove authority permanently
             [],
             TOKEN_PROGRAM_ID,
           ),
         );
         await sendTx(tx4);
-        setStepStatus('revoke', 'done');
+        setStepStatus("revoke", "done");
       }
 
       const mintAddr = mintKeypair.publicKey.toBase58();
       setDeployedMint(mintAddr);
-      toast.success('Token deployed! Mint address copied to clipboard.');
+      toast.success("Token deployed! Mint address copied to clipboard.");
       navigator.clipboard.writeText(mintAddr).catch(() => {});
     } catch (err) {
       console.error(err);
       const detail = formatSolanaError(err);
       toast.error(`Deployment failed: ${detail}`);
       // Mark the in-progress step as errored
-      setDeploySteps(prev => prev.map(s => (s.status === 'pending' ? { ...s, status: 'error' } : s)));
+      setDeploySteps((prev) =>
+        prev.map((s) =>
+          s.status === "pending" ? { ...s, status: "error" } : s,
+        ),
+      );
     } finally {
       setIsDeploying(false);
     }
@@ -650,7 +877,15 @@ const Admin = () => {
 
   // ── Create presale ────────────────────────────────────────────────────────────
 
+  const [duration, setDuration] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const totalSeconds =
+    duration.d * 86400 + // days → seconds
+    duration.h * 3600 + // hours → seconds
+    duration.m * 60 + // minutes → seconds
+    duration.s;
+
   const handleCreate = async () => {
+<<<<<<< HEAD
     if (!publicKey) {
       toast.error('Connect your creator wallet before creating a presale.');
       return;
@@ -658,11 +893,21 @@ const Admin = () => {
 
     if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !derivedHardCapDisplay) {
       toast.error('Fill in all required fields (*)');
+=======
+    if (
+      !form.baseMint ||
+      !form.startTime ||
+      !form.endTime ||
+      !form.totalSupply ||
+      !derivedHardCapDisplay
+    ) {
+      toast.error("Fill in all required fields (*)");
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       return;
     }
 
     const startTs = Math.floor(new Date(form.startTime).getTime() / 1000);
-    const endTs   = Math.floor(new Date(form.endTime).getTime() / 1000);
+    const endTs = Math.floor(new Date(form.endTime).getTime() / 1000);
 
     if (!Number.isFinite(startTs) || !Number.isFinite(endTs)) {
       toast.error('Start time and end time must be valid dates.');
@@ -670,10 +915,11 @@ const Admin = () => {
     }
 
     if (endTs <= startTs) {
-      toast.error('End time must be after start time');
+      toast.error("End time must be after start time");
       return;
     }
 
+<<<<<<< HEAD
     if (!isValidPublicKeyString(form.baseMint)) {
       toast.error('Base token mint must be a valid Solana public key.');
       return;
@@ -692,25 +938,41 @@ const Admin = () => {
     const maxDeposit = parseFloat(form.maxDeposit || hardcapRaw || '0');
     const depositFeeBps = parseInt(form.depositFeeBps || '0', 10);
     const tokenDecimals = parseInt(form.tokenDecimals || '9', 10);
+=======
+    const hardcap = parseFloat(derivedHardCapDisplay || "0");
+    const hardcapRaw = derivedHardCapDisplay || "0";
+    const softcap = parseFloat(form.softcap || "0");
+    const totalSupply = parseFloat(form.totalSupply || "0");
+    const minDepositInput = parseFloat(form.minDeposit || "0");
+    const maxDeposit = parseFloat(form.maxDeposit || hardcapRaw || "0");
+    const depositFeeBps = parseInt(form.depositFeeBps || "0", 10);
+    const tokenDecimals = parseInt(form.tokenDecimals || "9", 10);
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     const quoteDecimals = getQuoteMintDecimals(form.quoteMint);
-    const minDeposit = minDepositInput > 0 ? minDepositInput : 1 / Math.pow(10, quoteDecimals);
-    const minDepositRaw = minDepositInput > 0 ? String(form.minDeposit) : smallestUnitAsDecimalString(quoteDecimals);
-    const maxDepositRaw = form.maxDeposit || hardcapRaw || '0';
+    const minDeposit =
+      minDepositInput > 0 ? minDepositInput : 1 / Math.pow(10, quoteDecimals);
+    const minDepositRaw =
+      minDepositInput > 0
+        ? String(form.minDeposit)
+        : smallestUnitAsDecimalString(quoteDecimals);
+    const maxDepositRaw = form.maxDeposit || hardcapRaw || "0";
 
     if (!Number.isFinite(hardcap) || !Number.isFinite(softcap) || !Number.isFinite(totalSupply)) {
       toast.error('Hard cap, soft cap, and total token supply must be valid numbers.');
       return;
     }
     if (!(hardcap > 0) || !(totalSupply > 0)) {
-      toast.error('Hard cap and total token supply must be greater than 0');
+      toast.error("Hard cap and total token supply must be greater than 0");
       return;
     }
     if (softcap < 0 || softcap > hardcap) {
-      toast.error('Soft cap must be between 0 and the hard cap');
+      toast.error("Soft cap must be between 0 and the hard cap");
       return;
     }
     if (minDeposit < 0 || maxDeposit <= 0 || minDeposit > maxDeposit) {
-      toast.error('Deposit caps are invalid. Ensure min deposit is not greater than max deposit');
+      toast.error(
+        "Deposit caps are invalid. Ensure min deposit is not greater than max deposit",
+      );
       return;
     }
     if (maxDeposit > hardcap) {
@@ -718,37 +980,42 @@ const Admin = () => {
       return;
     }
     if (depositFeeBps < 0 || depositFeeBps > 5000) {
-      toast.error('Deposit fee must be between 0 and 5000 bps');
+      toast.error("Deposit fee must be between 0 and 5000 bps");
       return;
     }
     if (tokenDecimals < 0 || tokenDecimals > 9) {
-      toast.error('Token decimals must be between 0 and 9');
+      toast.error("Token decimals must be between 0 and 9");
       return;
     }
 
     let immediateReleaseTs = endTs;
     if (form.enableVesting) {
-      const immediateReleaseBps = parseInt(form.immediateReleaseBps || '0', 10);
-      const lockDuration = parseInt(form.lockDuration || '0', 10);
-      const vestDuration = parseInt(form.vestDuration || '0', 10);
+      const immediateReleaseBps = parseInt(form.immediateReleaseBps || "0", 10);
+      const lockDuration =
+        duration.d * 86400 + duration.h * 3600 + duration.m * 60 + duration.s;
+      console.log("lockDuration", lockDuration);
+      const vestDuration = parseInt(form.vestDuration || "0", 10);
       immediateReleaseTs = form.immediateReleaseTimestamp
         ? Math.floor(new Date(form.immediateReleaseTimestamp).getTime() / 1000)
         : endTs;
 
       if (immediateReleaseBps < 0 || immediateReleaseBps > 10000) {
-        toast.error('Immediate release must be between 0 and 10000 bps');
+        toast.error("Immediate release must be between 0 and 10000 bps");
         return;
       }
       if (lockDuration < 0 || vestDuration < 0) {
-        toast.error('Lock and vest duration must be 0 or greater');
+        toast.error("Lock and vest duration must be 0 or greater");
         return;
       }
       if (immediateReleaseTs < endTs) {
-        toast.error('Immediate release timestamp cannot be earlier than the presale end time');
+        toast.error(
+          "Immediate release timestamp cannot be earlier than the presale end time",
+        );
         return;
       }
     }
 
+<<<<<<< HEAD
     try {
       decimalToBN(form.totalSupply, tokenDecimals);
       decimalToBN(form.softcap || '0', quoteDecimals);
@@ -779,51 +1046,76 @@ const Admin = () => {
 
     try {
       const programId      = new PublicKey(PRESALE_PROGRAM_ID);
+=======
+    setInProgress((p) => ({ ...p, create: true }));
+    setNewVaultAddress("");
+
+    try {
+      const dec = Math.pow(10, tokenDecimals);
+      const solDec = 1e9;
+      const programId = new PublicKey(PRESALE_PROGRAM_ID);
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       const baseMintPubkey = new PublicKey(form.baseMint);
       const quoteMintPubkey = new PublicKey(form.quoteMint);
-      const presalePubkey  = derivePresale(baseMintPubkey, quoteMintPubkey, publicKey, programId);
+      const presalePubkey = derivePresale(
+        baseMintPubkey,
+        quoteMintPubkey,
+        publicKey,
+        programId,
+      );
 
       const presaleArgs = {
         presaleMaximumCap: derivedHardCapRaw,
-        presaleMinimumCap: decimalToBN(form.softcap || '0', quoteDecimals),
-        presaleStartTime:  new BN(startTs),
-        presaleEndTime:    new BN(endTs),
-        whitelistMode:     parseInt(form.whitelistMode),
+        presaleMinimumCap: decimalToBN(form.softcap || "0", quoteDecimals),
+        presaleStartTime: new BN(startTs),
+        presaleEndTime: new BN(endTs),
+        whitelistMode: parseInt(form.whitelistMode),
         unsoldTokenAction: parseInt(form.unsoldTokenAction),
         disableEarlierPresaleEndOnceCapReached: false,
       };
 
-      const lockedVestingArgs = form.enableVesting ? {
-        immediateReleaseBps:       new BN(parseInt(form.immediateReleaseBps)),
-        lockDuration:              new BN(parseInt(form.lockDuration)),
-        vestDuration:              new BN(parseInt(form.vestDuration)),
-        immediateReleaseTimestamp: new BN(immediateReleaseTs),
-      } : undefined;
+      const lockedVestingArgs = form.enableVesting
+        ? {
+            immediateReleaseBps: new BN(parseInt(form.immediateReleaseBps)),
+            lockDuration: new BN(totalSeconds),
+            vestDuration: new BN(parseInt(form.vestDuration)),
+            immediateReleaseTimestamp: new BN(immediateReleaseTs),
+          }
+        : undefined;
 
       const params = {
         presaleArgs,
         ...(lockedVestingArgs ? { lockedVestingArgs } : {}),
-        basePubkey:        publicKey,
+        basePubkey: publicKey,
         baseMintPubkey,
         quoteMintPubkey,
-        creatorPubkey:     publicKey,
-        feePayerPubkey:    publicKey,
-        presaleRegistries: [{
-          buyerMinimumDepositCap: decimalToBN(minDepositRaw, quoteDecimals),
-          buyerMaximumDepositCap: decimalToBN(maxDepositRaw, quoteDecimals),
-          presaleSupply:          decimalToBN(form.totalSupply, tokenDecimals),
-          depositFeeBps:          new BN(depositFeeBps),
-        }],
+        creatorPubkey: publicKey,
+        feePayerPubkey: publicKey,
+        presaleRegistries: [
+          {
+            buyerMinimumDepositCap: decimalToBN(minDepositRaw, quoteDecimals),
+            buyerMaximumDepositCap: decimalToBN(maxDepositRaw, quoteDecimals),
+            presaleSupply: decimalToBN(form.totalSupply, tokenDecimals),
+            depositFeeBps: new BN(depositFeeBps),
+          },
+        ],
       };
+      console.log(
+        JSON.stringify(
+          params,
+          (key, value) => (value?.toString ? value.toString() : value),
+          2,
+        ),
+      );
 
-      console.groupCollapsed('[Admin] Create presale');
+      console.groupCollapsed("[Admin] Create presale");
       const fixedPrice = FIXED_PRESALE_PRICE;
-      console.log('derivedPresale', presalePubkey.toBase58());
-      console.log('params', {
+      console.log("derivedPresale", presalePubkey.toBase58());
+      console.log("params", {
         baseMint: baseMintPubkey.toBase58(),
         quoteMint: quoteMintPubkey.toBase58(),
         creator: publicKey.toBase58(),
-        presaleType: 'fixed',
+        presaleType: "fixed",
         fixedPrice: fixedPrice.toString(),
         hardcap,
         softcap,
@@ -834,12 +1126,16 @@ const Admin = () => {
         depositFeeBps,
         whitelistMode: form.whitelistMode,
         unsoldTokenAction: form.unsoldTokenAction,
-        lockedVestingArgs: lockedVestingArgs ? {
-          immediateReleaseBps: lockedVestingArgs.immediateReleaseBps.toString(),
-          lockDuration: lockedVestingArgs.lockDuration.toString(),
-          vestDuration: lockedVestingArgs.vestDuration.toString(),
-          immediateReleaseTimestamp: lockedVestingArgs.immediateReleaseTimestamp.toString(),
-        } : null,
+        lockedVestingArgs: lockedVestingArgs
+          ? {
+              immediateReleaseBps:
+                lockedVestingArgs.immediateReleaseBps.toString(),
+              lockDuration: lockedVestingArgs.lockDuration.toString(),
+              vestDuration: lockedVestingArgs.vestDuration.toString(),
+              immediateReleaseTimestamp:
+                lockedVestingArgs.immediateReleaseTimestamp.toString(),
+            }
+          : null,
       });
       console.groupEnd();
 
@@ -862,15 +1158,20 @@ const Admin = () => {
       // Pass vaultAddr explicitly to fetchStats to avoid the stale-closure window
       // before setStatsVaultOverride has settled in React state.
       setStatsVaultOverride(vaultAddr);
-      setActiveTab('stats');
+      setActiveTab("stats");
       await fetchStats(vaultAddr);
-      toast.success('Presale created! Stats tab now shows the new vault.');
+      toast.success("Presale created! Stats tab now shows the new vault.");
     } catch (err) {
+<<<<<<< HEAD
       console.error('[Admin] Presale creation failed', err);
       const detail = formatSolanaError(err);
+=======
+      console.error("[Admin] Presale creation failed", err);
+      const detail = formatSolanaSendError(err);
+>>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       toast.error(`Presale creation failed: ${detail}`);
     } finally {
-      setInProgress(p => ({ ...p, create: false }));
+      setInProgress((p) => ({ ...p, create: false }));
     }
   };
 
@@ -880,8 +1181,10 @@ const Admin = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const setField      = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
-  const setTokenField = (key) => (e) => setTokenForm(f => ({ ...f, [key]: e.target.value }));
+  const setField = (key) => (e) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+  const setTokenField = (key) => (e) =>
+    setTokenForm((f) => ({ ...f, [key]: e.target.value }));
 
   // ── Not connected ─────────────────────────────────────────────────────────────
 
@@ -892,8 +1195,12 @@ const Admin = () => {
           <ShieldCheck size={48} className="text-primary" />
         </div>
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-tertiary mb-2">Admin Dashboard</h1>
-          <p className="text-tertiary/50 mb-6">Connect your creator wallet to access the admin panel</p>
+          <h1 className="text-3xl font-bold text-tertiary mb-2">
+            Admin Dashboard
+          </h1>
+          <p className="text-tertiary/50 mb-6">
+            Connect your creator wallet to access the admin panel
+          </p>
           <WalletMultiButton />
         </div>
       </div>
@@ -901,77 +1208,108 @@ const Admin = () => {
   }
 
   const TABS = [
-    { id: 'stats',  label: 'Stats',         Icon: BarChart3   },
-    { id: 'token',  label: 'Deploy Token',  Icon: PackagePlus },
-    { id: 'create', label: 'Create Presale', Icon: PlusCircle },
-    { id: 'manage', label: 'Manage',         Icon: Settings    },
+    { id: "stats", label: "Stats", Icon: BarChart3 },
+    { id: "token", label: "Deploy Token", Icon: PackagePlus },
+    { id: "create", label: "Create Presale", Icon: PlusCircle },
+    { id: "manage", label: "Manage", Icon: Settings },
   ];
 
   // Derived quote labels — computed once per render to stay consistent across the template
-  const ql  = quoteLabel(stats?.quoteMint);   // label from live on-chain data (Stats / Manage)
-  const fql = quoteLabel(form.quoteMint);     // label from the Create form's current input
-  const formTokenDecimals = Math.max(0, parseInt(form.tokenDecimals || '9', 10) || 0);
+  const ql = quoteLabel(stats?.quoteMint); // label from live on-chain data (Stats / Manage)
+  const fql = quoteLabel(form.quoteMint); // label from the Create form's current input
+  const formTokenDecimals = Math.max(
+    0,
+    parseInt(form.tokenDecimals || "9", 10) || 0,
+  );
   const formQuoteDecimals = getQuoteMintDecimals(form.quoteMint);
-  const derivedHardCapRaw = parseFloat(form.totalSupply || '0') > 0
-    ? calculateMaximumQuoteAmountForPresaleSupply(
-        FIXED_PRESALE_PRICE,
-        new BN(formTokenDecimals),
-        new BN(formQuoteDecimals),
-        decimalToBN(form.totalSupply, formTokenDecimals),
-        Rounding.Down,
-      ).maxPresaleCap
-    : null;
+  const derivedHardCapRaw =
+    parseFloat(form.totalSupply || "0") > 0
+      ? calculateMaximumQuoteAmountForPresaleSupply(
+          FIXED_PRESALE_PRICE,
+          new BN(formTokenDecimals),
+          new BN(formQuoteDecimals),
+          decimalToBN(form.totalSupply, formTokenDecimals),
+          Rounding.Down,
+        ).maxPresaleCap
+      : null;
   const derivedHardCapDisplay = derivedHardCapRaw
     ? new Decimal(derivedHardCapRaw.toString())
         .div(new Decimal(10).pow(formQuoteDecimals))
         .toFixed(formQuoteDecimals)
-        .replace(/\.?0+$/, '')
-    : '';
-  const effectiveMinDeposit = parseFloat(form.minDeposit || '0') > 0
-    ? parseFloat(form.minDeposit || '0')
-    : 1 / Math.pow(10, formQuoteDecimals);
-  const effectiveMaxDeposit = parseFloat(form.maxDeposit || derivedHardCapDisplay || '0') > 0
-    ? parseFloat(form.maxDeposit || derivedHardCapDisplay || '0')
-    : null;
-  const derivedFixedPrice = parseFloat(form.totalSupply || '0') > 0
-    ? FIXED_PRESALE_PRICE
-    : null;
+        .replace(/\.?0+$/, "")
+    : "";
+  const effectiveMinDeposit =
+    parseFloat(form.minDeposit || "0") > 0
+      ? parseFloat(form.minDeposit || "0")
+      : 1 / Math.pow(10, formQuoteDecimals);
+  const effectiveMaxDeposit =
+    parseFloat(form.maxDeposit || derivedHardCapDisplay || "0") > 0
+      ? parseFloat(form.maxDeposit || derivedHardCapDisplay || "0")
+      : null;
+  const derivedFixedPrice =
+    parseFloat(form.totalSupply || "0") > 0 ? FIXED_PRESALE_PRICE : null;
   const effectiveImmediateRelease = form.enableVesting
-    ? (form.immediateReleaseTimestamp || form.endTime || 'Presale end time')
-    : 'No vesting';
+    ? form.immediateReleaseTimestamp || form.endTime || "Presale end time"
+    : "No vesting";
   const isCompletedPresale = stats?.state === 2;
   const isFailedPresale = stats?.state === 3;
-  const unsoldActionIsRefund = form.unsoldTokenAction === '0';
+  const unsoldActionIsRefund = form.unsoldTokenAction === "0";
   const manageUnsoldIcon = unsoldActionIsRefund ? RotateCcw : Flame;
-  const manageUnsoldTitle = unsoldActionIsRefund ? 'Refund Unsold Tokens' : 'Burn Unsold Tokens';
+  const manageUnsoldTitle = unsoldActionIsRefund
+    ? "Refund Unsold Tokens"
+    : "Burn Unsold Tokens";
   const manageUnsoldDescription = unsoldActionIsRefund
-    ? 'Return unsold LX from the presale vault back to the creator wallet after the presale ends.'
-    : 'Permanently burn unsold LX from the presale vault after the presale ends.';
-  const manageUnsoldButton = unsoldActionIsRefund ? 'Refund Unsold LX' : 'Burn Unsold LX';
-  const canManageUnsold = isCreator && (isCompletedPresale || isFailedPresale);
+    ? "Return unsold LX from the presale vault back to the creator wallet after the presale ends."
+    : "Permanently burn unsold LX from the presale vault after the presale ends.";
+  const manageUnsoldButton = unsoldActionIsRefund
+    ? "Refund Unsold LX"
+    : "Burn Unsold LX";
+  const canManageUnsold = isCreator && isCompletedPresale;
   const withdrawDescription = isFailedPresale
     ? `Raised ${ql} is not withdrawable after a failed presale. Use "${manageUnsoldTitle}" below to recover the LX allocation.`
     : `Withdraw all ${ql} raised from the presale into your wallet. Available once the presale ends successfully.`;
 
   // ── Main render ───────────────────────────────────────────────────────────────
 
+  if(import.meta.env.VITE_PUBKEY !== publicKey.toBase58()){
+    return (
+      <div className="min-h-screen bg-secondary flex flex-col items-center justify-center gap-6 px-4">
+        <div className="bg-primary/10 p-5 rounded-2xl">
+          <ShieldCheck size={48} className="text-primary" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-tertiary mb-2">
+            Admin Dashboard
+          </h1>
+          <p className="text-tertiary/50 mb-6">
+            Connect your creator wallet to access the admin panel
+          </p>
+          <WalletMultiButton />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-secondary text-tertiary pt-24 pb-16 px-4 font-sans">
       <div className="max-w-4xl mx-auto">
-
         {/* Page header */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <ShieldCheck size={28} className="text-primary" />
             <div>
               <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              {isCreator
-                ? <span className="text-xs text-green-400">Creator wallet connected</span>
-                : <span className="text-xs text-yellow-400">Read-only — connect creator wallet for actions</span>
-              }
+              {isCreator ? (
+                <span className="text-xs text-green-400">
+                  Creator wallet connected
+                </span>
+              ) : (
+                <span className="text-xs text-tertiary">
+                  Read-only — connect creator wallet for actions
+                </span>
+              )}
             </div>
           </div>
-          <WalletMultiButton />
         </div>
 
         {/* Tabs */}
@@ -981,7 +1319,7 @@ const Admin = () => {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer
-                ${activeTab === id ? 'bg-primary text-secondary' : 'bg-tertiary/10 text-tertiary hover:bg-tertiary/20'}`}
+                ${activeTab === id ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary hover:bg-tertiary/20"}`}
             >
               {createElement(Icon, { size: 15 })}
               {label}
@@ -990,17 +1328,18 @@ const Admin = () => {
         </div>
 
         {/* ── STATS TAB ─────────────────────────────────────────── */}
-        {activeTab === 'stats' && (
+        {activeTab === "stats" && (
           <div className="space-y-4">
-
             {/* Post-create override banner */}
             {statsVaultOverride && (
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 text-blue-400 text-sm">
                   <CheckCircle2 size={16} />
                   <span>
-                    Showing newly created vault —{' '}
-                    <span className="font-mono">{shortAddr(statsVaultOverride)}</span>
+                    Showing newly created vault —{" "}
+                    <span className="font-mono">
+                      {shortAddr(statsVaultOverride)}
+                    </span>
                   </span>
                 </div>
                 <button
@@ -1022,14 +1361,20 @@ const Admin = () => {
                 {/* Progress card */}
                 <div className={cls.card}>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-tertiary/60">Presale State</span>
-                    <span className={`font-bold text-lg ${STATE_COLORS[stats.state] ?? 'text-tertiary'}`}>
-                      {STATE_LABELS[stats.state] ?? 'Unknown'}
+                    <span className="text-sm text-tertiary/60">
+                      Presale State
+                    </span>
+                    <span
+                      className={`font-bold text-lg ${STATE_COLORS[stats.state] ?? "text-tertiary"}`}
+                    >
+                      {STATE_LABELS[stats.state] ?? "Unknown"}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs mb-2 text-tertiary/70">
                     <span>Progress: {stats.progress.toFixed(2)}%</span>
-                    <span>Hard Cap: {stats.hardcap} {ql}</span>
+                    <span>
+                      Hard Cap: {stats.hardcap} {ql}
+                    </span>
                   </div>
                   <div className="w-full bg-tertiary/10 h-3 rounded-full overflow-hidden">
                     <div
@@ -1041,25 +1386,64 @@ const Admin = () => {
 
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <StatCard label="Total Deposited" value={`${stats.deposited.toFixed(4)} ${ql}`} icon={TrendingUp} />
-                  <StatCard label="Hard Cap"         value={`${stats.hardcap} ${ql}`}             icon={Lock}       />
-                  <StatCard label="Soft Cap"         value={`${stats.softcap} ${ql}`}             icon={Lock}       />
-                  <StatCard label="Token Supply"     value={stats.supply.toLocaleString()}        icon={Coins}      />
-                  <StatCard label="Participants"     value={stats.participants}                   icon={Users}      />
-                  <StatCard label="State"            value={STATE_LABELS[stats.state] ?? '—'}    icon={BarChart3}  />
+                  <StatCard
+                    label="Total Deposited"
+                    value={`${stats.deposited.toFixed(4)} ${ql}`}
+                    icon={TrendingUp}
+                  />
+                  <StatCard
+                    label="Hard Cap"
+                    value={`${stats.hardcap} ${ql}`}
+                    icon={Lock}
+                  />
+                  <StatCard
+                    label="Soft Cap"
+                    value={`${stats.softcap} ${ql}`}
+                    icon={Lock}
+                  />
+                  <StatCard
+                    label="Token Supply"
+                    value={stats.supply.toLocaleString()}
+                    icon={Coins}
+                  />
+                  <StatCard
+                    label="Participants"
+                    value={stats.participants}
+                    icon={Users}
+                  />
+                  <StatCard
+                    label="State"
+                    value={STATE_LABELS[stats.state] ?? "—"}
+                    icon={BarChart3}
+                  />
                 </div>
 
                 {/* Detail info */}
                 <div className={`${cls.card} space-y-3 text-sm`}>
                   {[
-                    ['Creator',      shortAddr(stats.creator),                  stats.creator],
-                    ['Vault PDA',    shortAddr(stats.activeVault),              stats.activeVault],
+                    ["Creator", shortAddr(stats.creator), stats.creator],
+                    [
+                      "Vault PDA",
+                      shortAddr(stats.activeVault),
+                      stats.activeVault,
+                    ],
                     // Show quote token row with copy only when it's not WSOL (WSOL is obvious from "SOL")
-                    ['Quote Token',  ql,  stats.quoteMint !== WSOL_MINT ? stats.quoteMint : null],
-                    ['Start Time',   new Date(stats.startTs).toLocaleString(),  null],
-                    ['End Time',     new Date(stats.endTs).toLocaleString(),    null],
+                    [
+                      "Quote Token",
+                      ql,
+                      stats.quoteMint !== WSOL_MINT ? stats.quoteMint : null,
+                    ],
+                    [
+                      "Start Time",
+                      new Date(stats.startTs).toLocaleString(),
+                      null,
+                    ],
+                    ["End Time", new Date(stats.endTs).toLocaleString(), null],
                   ].map(([label, display, copyVal]) => (
-                    <div key={label} className="flex justify-between items-center">
+                    <div
+                      key={label}
+                      className="flex justify-between items-center"
+                    >
                       <span className="text-tertiary/50">{label}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs">{display}</span>
@@ -1068,7 +1452,14 @@ const Admin = () => {
                             onClick={() => copyToClipboard(copyVal)}
                             className="text-tertiary/40 hover:text-primary transition-colors cursor-pointer"
                           >
-                            {copied ? <CheckCircle2 size={14} className="text-green-400" /> : <Copy size={14} />}
+                            {copied ? (
+                              <CheckCircle2
+                                size={14}
+                                className="text-green-400"
+                              />
+                            ) : (
+                              <Copy size={14} />
+                            )}
                           </button>
                         )}
                       </div>
@@ -1080,9 +1471,9 @@ const Admin = () => {
                 <button
                   onClick={() => fetchStats()}
                   disabled={loadingStats}
-                  className="w-full py-3 rounded-xl text-sm text-tertiary/60 border border-tertiary/10 bg-tertiary/5 flex items-center justify-center gap-2 hover:bg-tertiary/10 transition-all cursor-pointer"
+                  className="w-full py-3 text-sm text-primary border border-primary rounded-3xl bg-tertiary/5 flex items-center justify-center gap-2 hover:bg-primary/10 transition-all cursor-pointer"
                 >
-                  <RotateCcw size={14} />
+                  <RotateCcw size={14} className="text-primary" />
                   Refresh
                 </button>
               </>
@@ -1090,7 +1481,10 @@ const Admin = () => {
               <div className="text-center py-24 text-tertiary/40">
                 <AlertCircle size={40} className="mx-auto mb-3" />
                 <p>Could not load presale data</p>
-                <button onClick={() => fetchStats()} className="mt-4 text-primary text-sm underline cursor-pointer">
+                <button
+                  onClick={() => fetchStats()}
+                  className="mt-4 text-primary text-sm underline cursor-pointer"
+                >
                   Try again
                 </button>
               </div>
@@ -1099,9 +1493,8 @@ const Admin = () => {
         )}
 
         {/* ── DEPLOY TOKEN TAB ──────────────────────────────────── */}
-        {activeTab === 'token' && (
+        {activeTab === "token" && (
           <div className="space-y-6">
-
             {/* Header */}
             <div className={cls.card}>
               <div className="flex items-start gap-4">
@@ -1111,9 +1504,13 @@ const Admin = () => {
                 <div>
                   <h2 className="font-bold text-lg mb-1">Deploy Token-2022</h2>
                   <p className="text-sm text-tertiary/60 leading-relaxed">
-                    Creates a Token-2022 mint with on-chain metadata (name, symbol, image URI)
-                    in <span className="text-primary font-semibold">3 wallet approvals</span>.
-                    The mint address is what you paste into the "Base Token Mint" field in Create Presale.
+                    Creates a Token-2022 mint with on-chain metadata (name,
+                    symbol, image URI) in{" "}
+                    <span className="text-primary font-semibold">
+                      3 wallet approvals
+                    </span>
+                    . The mint address is what you paste into the "Base Token
+                    Mint" field in Create Presale.
                   </p>
                 </div>
               </div>
@@ -1121,7 +1518,9 @@ const Admin = () => {
 
             {/* Form */}
             <div className={`${cls.card} space-y-5`}>
-              <h3 className="font-semibold text-sm text-tertiary/70 uppercase tracking-wide">Token Details</h3>
+              <h3 className="font-semibold text-sm text-tertiary/70 uppercase tracking-wide">
+                Token Details
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1130,54 +1529,53 @@ const Admin = () => {
                     className={cls.input}
                     placeholder="e.g. LaunchX Coin"
                     value={tokenForm.tokenName}
-                    onChange={setTokenField('tokenName')}
+                    onChange={setTokenField("tokenName")}
                     disabled={isDeploying}
                   />
                 </div>
                 <div>
-                  <label className={cls.label}>Symbol * (auto-uppercased)</label>
+                  <label className={cls.label}>Symbol</label>
                   <input
                     className={cls.input}
-                    placeholder="e.g. LX"
+                    placeholder="LX"
+                    readOnly
                     value={tokenForm.tokenSymbol}
-                    onChange={setTokenField('tokenSymbol')}
+                    onChange={setTokenField("tokenSymbol")}
                     disabled={isDeploying}
                   />
                 </div>
               </div>
 
               <div>
-                <label className={cls.label}>Metadata URI (image / off-chain JSON)</label>
+                <label className={cls.label}>
+                  Metadata URI (image / off-chain JSON)
+                </label>
                 <input
                   className={cls.input}
+                  readOnly
                   placeholder="https://ipfs.io/ipfs/..."
                   value={tokenForm.metadataUri}
-                  onChange={setTokenField('metadataUri')}
+                  onChange={setTokenField("metadataUri")}
                   disabled={isDeploying}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className={cls.label}>Total Supply * (display units)</label>
-                  <input
-                    type="number"
-                    className={cls.input}
-                    placeholder="e.g. 4200000000"
-                    value={tokenForm.mintSupply}
-                    onChange={setTokenField('mintSupply')}
-                    disabled={isDeploying}
-                  />
+                  <label className={cls.label}>
+                    Total Supply * (display units)
+                  </label>
+                  <h1 className={cls.input}>4,200,000,000</h1>
                 </div>
                 <div>
                   <label className={cls.label}>Decimals (default: 9)</label>
                   <input
                     type="number"
                     className={cls.input}
-                    min="0"
-                    max="9"
+                    placeholder="9"
+                    readOnly
                     value={tokenForm.decimals}
-                    onChange={setTokenField('decimals')}
+                    onChange={setTokenField("decimals")}
                     disabled={isDeploying}
                   />
                 </div>
@@ -1186,49 +1584,63 @@ const Admin = () => {
               {/* Revoke mint toggle */}
               <div className="flex items-center justify-between bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold">Disable Mint Authority</p>
+                  <p className="text-sm font-semibold">
+                    Disable Mint Authority
+                  </p>
                   <p className="text-xs text-tertiary/50 mt-0.5">
-                    Permanently locks supply — no more tokens can ever be minted. Recommended for presales.
+                    Permanently locks supply — no more tokens can ever be
+                    minted. Recommended for presales.
                   </p>
                 </div>
-                <button
-                  onClick={() => setTokenForm(f => ({ ...f, revokeMint: !f.revokeMint }))}
-                  disabled={isDeploying}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer
-                    ${tokenForm.revokeMint ? 'bg-primary text-secondary' : 'bg-tertiary/10 text-tertiary'}`}
-                >
-                  {tokenForm.revokeMint ? 'Enabled' : 'Disabled'}
+                <button className="px-4 py-1.5 rounded-xl text-xs font-bold transition-all bg-primary text-secondary">
+                  Enabled
                 </button>
               </div>
             </div>
 
             {/* Step tracker */}
             <div className={cls.card}>
-              <h3 className="font-semibold text-sm text-tertiary/70 uppercase tracking-wide mb-4">Deployment Steps</h3>
+              <h3 className="font-semibold text-sm text-tertiary/70 uppercase tracking-wide mb-4">
+                Deployment Steps
+              </h3>
               <div className="space-y-3">
                 {deploySteps.map((step, idx) => {
                   const StepIcon =
-                    step.status === 'done'    ? CheckCircle2 :
-                    step.status === 'error'   ? XCircle      :
-                    step.status === 'skipped' ? MinusCircle  :
-                    step.status === 'pending' ? Loader2      :
-                    Circle;
+                    step.status === "done"
+                      ? CheckCircle2
+                      : step.status === "error"
+                        ? XCircle
+                        : step.status === "skipped"
+                          ? MinusCircle
+                          : step.status === "pending"
+                            ? Loader2
+                            : Circle;
                   const color =
-                    step.status === 'done'    ? 'text-green-400' :
-                    step.status === 'error'   ? 'text-red-400'   :
-                    step.status === 'skipped' ? 'text-tertiary/30' :
-                    step.status === 'pending' ? 'text-primary'   :
-                    'text-tertiary/30';
+                    step.status === "done"
+                      ? "text-green-400"
+                      : step.status === "error"
+                        ? "text-red-400"
+                        : step.status === "skipped"
+                          ? "text-tertiary/30"
+                          : step.status === "pending"
+                            ? "text-primary"
+                            : "text-tertiary/30";
                   return (
                     <div key={step.id} className="flex items-center gap-3">
                       <StepIcon
                         size={18}
-                        className={`shrink-0 ${color} ${step.status === 'pending' ? 'animate-spin' : ''}`}
+                        className={`shrink-0 ${color} ${step.status === "pending" ? "animate-spin" : ""}`}
                       />
-                      <span className={`text-sm ${step.status === 'skipped' ? 'line-through text-tertiary/30' : step.status === 'idle' ? 'text-tertiary/40' : 'text-tertiary'}`}>
-                        <span className="text-tertiary/40 mr-1.5">{idx + 1}.</span>
+                      <span
+                        className={`text-sm ${step.status === "skipped" ? "line-through text-tertiary/30" : step.status === "idle" ? "text-tertiary/40" : "text-tertiary"}`}
+                      >
+                        <span className="text-tertiary/40 mr-1.5">
+                          {idx + 1}.
+                        </span>
                         {step.label}
-                        {step.status === 'skipped' && <span className="ml-2 text-xs">(skipped)</span>}
+                        {step.status === "skipped" && (
+                          <span className="ml-2 text-xs">(skipped)</span>
+                        )}
                       </span>
                     </div>
                   );
@@ -1242,10 +1654,14 @@ const Admin = () => {
               disabled={isDeploying}
               className={`w-full py-4 rounded-full font-bold text-lg border border-primary text-primary bg-secondary/20
                 flex items-center justify-center gap-2 transition-all
-                ${isDeploying ? 'cursor-not-allowed opacity-60' : 'hover:scale-[1.01] cursor-pointer active:scale-[0.99]'}`}
+                ${isDeploying ? "cursor-not-allowed opacity-60" : "hover:scale-[1.01] cursor-pointer active:scale-[0.99]"}`}
             >
-              {isDeploying ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
-              {isDeploying ? 'Deploying...' : 'Deploy Token'}
+              {isDeploying ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <Zap size={20} />
+              )}
+              {isDeploying ? "Deploying..." : "Deploy Token"}
             </button>
 
             {/* Result card */}
@@ -1258,14 +1674,26 @@ const Admin = () => {
 
                 {/* Mint address */}
                 <div>
-                  <p className="text-xs text-tertiary/50 mb-1.5">Mint Address</p>
+                  <p className="text-xs text-tertiary/50 mb-1.5">
+                    Mint Address
+                  </p>
                   <div className="flex items-center gap-2 bg-tertiary/5 border border-tertiary/10 rounded-lg px-3 py-2">
-                    <span className="font-mono text-xs flex-1 break-all text-tertiary">{deployedMint}</span>
+                    <span className="font-mono text-xs flex-1 break-all text-tertiary">
+                      {deployedMint}
+                    </span>
                     <button
-                      onClick={() => { navigator.clipboard.writeText(deployedMint); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(deployedMint);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
                       className="text-tertiary/50 hover:text-primary cursor-pointer shrink-0"
                     >
-                      {copied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
+                      {copied ? (
+                        <CheckCircle2 size={16} className="text-green-400" />
+                      ) : (
+                        <Copy size={16} />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1273,9 +1701,15 @@ const Admin = () => {
                 {/* Quick-fill action */}
                 <button
                   onClick={() => {
-                    setForm(f => ({ ...f, baseMint: deployedMint, tokenDecimals: tokenForm.decimals }));
-                    setActiveTab('create');
-                    toast.success('Base Token Mint pre-filled in Create Presale');
+                    setForm((f) => ({
+                      ...f,
+                      baseMint: deployedMint,
+                      tokenDecimals: tokenForm.decimals,
+                    }));
+                    setActiveTab("create");
+                    toast.success(
+                      "Base Token Mint pre-filled in Create Presale",
+                    );
                   }}
                   className="w-full py-2.5 rounded-xl text-sm font-semibold border border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
@@ -1284,12 +1718,11 @@ const Admin = () => {
                 </button>
               </div>
             )}
-
           </div>
         )}
 
         {/* ── CREATE TAB ────────────────────────────────────────── */}
-        {activeTab === 'create' && (
+        {activeTab === "create" && (
           <div className={`${cls.card} space-y-6`}>
             <h2 className="font-bold text-lg flex items-center gap-2">
               <PlusCircle size={20} className="text-primary" />
@@ -1304,7 +1737,9 @@ const Admin = () => {
               <div className="text-right">
                 <p className="text-xs text-tertiary/50 mb-1">Derived Price</p>
                 <p className="text-sm font-semibold">
-                  {derivedFixedPrice ? `${derivedFixedPrice.toFixed(formQuoteDecimals + 2)} ${fql} / LX` : 'Set token supply'}
+                  {derivedFixedPrice
+                    ? `${derivedFixedPrice.toFixed(formQuoteDecimals + 2)} ${fql} / LX`
+                    : "Set token supply"}
                 </p>
               </div>
             </div>
@@ -1312,40 +1747,91 @@ const Admin = () => {
             {/* Token info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className={cls.label}>Base Token Mint * (the token you are selling)</label>
-                <input className={cls.input} placeholder="e.g. LX token mint address" value={form.baseMint} onChange={setField('baseMint')} />
+                <label className={cls.label}>
+                  Base Token Mint * (the token you are selling)
+                </label>
+                <input
+                  className={cls.input}
+                  placeholder="e.g. LX token mint address"
+                  value={form.baseMint}
+                  onChange={setField("baseMint")}
+                />
               </div>
               <div>
-                <label className={cls.label}>Quote Token Mint (payment token — default WSOL)</label>
-                <input className={cls.input} value={form.quoteMint} onChange={setField('quoteMint')} />
+                <label className={cls.label}>
+                  Quote Token Mint (payment token — default WSOL)
+                </label>
+                <input
+                  className={cls.input}
+                  readOnly
+                  value={form.quoteMint}
+                  onChange={setField("quoteMint")}
+                />
               </div>
               <div>
                 <label className={cls.label}>Token Decimals (default: 9)</label>
-                <input type="number" className={cls.input} value={form.tokenDecimals} onChange={setField('tokenDecimals')} />
+                <input
+                  type="number"
+                  className={cls.input}
+                  readOnly
+                  value={form.tokenDecimals}
+                  onChange={setField("tokenDecimals")}
+                />
               </div>
             </div>
 
             {/* Timing — labels use fql so they update when quoteMint changes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={cls.label}>Soft Cap ({fql})</label>
-                <input type="number" className={cls.input} placeholder="e.g. 100" value={form.softcap} onChange={setField('softcap')} />
+                <label className={cls.label}>Soft Cap({fql})</label>
+                <input
+                  type="number"
+                  className={`${cls.input} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                  placeholder="e.g. 100"
+                  value={form.softcap}
+                  onChange={setField("softcap")}
+                />
               </div>
               <div>
                 <label className={cls.label}>Start Time *</label>
-                <input type="datetime-local" className={cls.input} value={form.startTime} onChange={setField('startTime')} />
+                <input
+                  type="datetime-local"
+                  className={cls.input}
+                  value={form.startTime}
+                  onChange={setField("startTime")}
+                />
               </div>
               <div className="md:col-span-2">
                 <label className={cls.label}>End Time *</label>
-                <input type="datetime-local" className={cls.input} value={form.endTime} onChange={setField('endTime')} />
+                <input
+                  type="datetime-local"
+                  className={cls.input}
+                  value={form.endTime}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      endTime: value,
+                      immediateReleaseTimestamp: value,
+                    }));
+                  }}
+                />
               </div>
             </div>
 
             {/* Supply & limits */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={cls.label}>Total Token Supply * (tokens to sell)</label>
-                <input type="number" className={cls.input} placeholder="e.g. 10000000" value={form.totalSupply} onChange={setField('totalSupply')} />
+                <label className={cls.label}>
+                  Total Token Supply * (tokens to sell)
+                </label>
+                <input
+                  type="number"
+                  className={`${cls.input} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                  placeholder="e.g. 10000000"
+                  value={form.totalSupply}
+                  onChange={setField("totalSupply")}
+                />
               </div>
               <div>
                 <label className={cls.label}>Hard Cap * ({fql})</label>
@@ -1356,40 +1842,78 @@ const Admin = () => {
                   disabled
                 />
                 <p className="text-[11px] text-tertiary/45 mt-1">
-                  Auto-calculated from total token supply using the fixed presale price.
+                  Auto-calculated from total token supply using the fixed
+                  presale price.
                 </p>
               </div>
-              <div>
-                <label className={cls.label}>Deposit Fee (basis points, 100 = 1%)</label>
-                <input type="number" className={cls.input} placeholder="0" value={form.depositFeeBps} onChange={setField('depositFeeBps')} />
+              {/* <div>
+                <label className={cls.label}>
+                  Deposit Fee (basis points, 100 = 1%)
+                </label>
+                <input
+                  type="number"
+                  className={cls.input}
+                  placeholder="0"
+                  value={form.depositFeeBps}
+                  onChange={setField("depositFeeBps")}
+                />
               </div>
               <div>
-                <label className={cls.label}>Min Deposit per Wallet ({fql})</label>
-                <input type="number" className={cls.input} placeholder="0" value={form.minDeposit} onChange={setField('minDeposit')} />
+                <label className={cls.label}>
+                  Min Deposit per Wallet ({fql})
+                </label>
+                <input
+                  type="number"
+                  className={cls.input}
+                  placeholder="0"
+                  value={form.minDeposit}
+                  onChange={setField("minDeposit")}
+                />
                 <p className="text-[11px] text-tertiary/45 mt-1">
-                  If left at 0, uses the smallest quote-token unit: {effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}
+                  If left at 0, uses the smallest quote-token unit:{" "}
+                  {effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}
                 </p>
               </div>
               <div>
-                <label className={cls.label}>Max Deposit per Wallet ({fql})</label>
-                <input type="number" className={cls.input} placeholder="e.g. 50" value={form.maxDeposit} onChange={setField('maxDeposit')} />
-              </div>
+                <label className={cls.label}>
+                  Max Deposit per Wallet ({fql})
+                </label>
+                <input
+                  type="number"
+                  className={cls.input}
+                  placeholder="e.g. 50"
+                  value={form.maxDeposit}
+                  onChange={setField("maxDeposit")}
+                />
+              </div> */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
-                <p className="text-[11px] text-tertiary/50 mb-1">Effective Min Deposit</p>
-                <p className="text-sm font-semibold">{effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}</p>
-              </div>
-              <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
-                <p className="text-[11px] text-tertiary/50 mb-1">Effective Max Deposit</p>
+                <p className="text-[11px] text-tertiary/50 mb-1">
+                  Effective Min Deposit
+                </p>
                 <p className="text-sm font-semibold">
-                  {effectiveMaxDeposit != null ? `${effectiveMaxDeposit} ${fql}` : 'Set hard cap first'}
+                  {effectiveMinDeposit.toFixed(formQuoteDecimals)} {fql}
                 </p>
               </div>
               <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
-                <p className="text-[11px] text-tertiary/50 mb-1">Immediate Release Time</p>
-                <p className="text-sm font-semibold break-all">{effectiveImmediateRelease}</p>
+                <p className="text-[11px] text-tertiary/50 mb-1">
+                  Effective Max Deposit
+                </p>
+                <p className="text-sm font-semibold">
+                  {effectiveMaxDeposit != null
+                    ? `${effectiveMaxDeposit} ${fql}`
+                    : "Set hard cap first"}
+                </p>
+              </div>
+              <div className="bg-tertiary/5 border border-tertiary/10 rounded-xl px-4 py-3">
+                <p className="text-[11px] text-tertiary/50 mb-1">
+                  Immediate Release Time
+                </p>
+                <p className="text-sm font-semibold break-all">
+                  {effectiveImmediateRelease}
+                </p>
               </div>
             </div>
 
@@ -1397,18 +1921,14 @@ const Admin = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={cls.label}>Whitelist Mode</label>
-                <select className={cls.input} value={form.whitelistMode} disabled>
-                  <option value="0">Permissionless (Public)</option>
-                  <option value="1">Merkle Proof Whitelist</option>
-                  <option value="2">Authority Whitelist</option>
-                </select>
+
+                <h1 className={cls.input}>Permissionless (Public)</h1>
               </div>
+
               <div>
                 <label className={cls.label}>Unsold Token Action</label>
-                <select className={cls.input} value={form.unsoldTokenAction} disabled>
-                  <option value="0">Refund to Creator</option>
-                  <option value="1">Burn</option>
-                </select>
+
+                <h1 className={cls.input}>Refund to Creator</h1>
               </div>
             </div>
 
@@ -1420,30 +1940,95 @@ const Admin = () => {
                   Vesting Schedule
                 </span>
                 <button
-                  onClick={() => setForm(f => ({ ...f, enableVesting: !f.enableVesting }))}
+                  onClick={() =>
+                    setForm((f) => ({ ...f, enableVesting: !f.enableVesting }))
+                  }
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer
-                    ${form.enableVesting ? 'bg-primary text-secondary' : 'bg-tertiary/10 text-tertiary'}`}
+                    ${form.enableVesting ? "bg-primary text-secondary" : "bg-tertiary/10 text-tertiary"}`}
                 >
-                  {form.enableVesting ? 'Enabled' : 'Disabled'}
+                  {form.enableVesting ? "Enabled" : "Disabled"}
                 </button>
               </div>
               {form.enableVesting && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                  <div className="mt-5">
+                    <label className={cls.label}>
+                      Immediate Release (bps — 7500 = 75%)
+                    </label>
+                    <input
+                      type="number"
+                      readOnly
+                      className={cls.input}
+                      value={form.immediateReleaseBps}
+                      onChange={setField("immediateReleaseBps")}
+                    />
+                  </div>
+
                   <div>
-                    <label className={cls.label}>Immediate Release (bps — 5000 = 50%)</label>
-                    <input type="number" className={cls.input} value={form.immediateReleaseBps} onChange={setField('immediateReleaseBps')} />
+                    <label className={cls.label}>
+                      Lock Duration (0 = none)
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { key: "d", label: "Days" },
+                        { key: "h", label: "Hours" },
+                        { key: "m", label: "Minutes" },
+                        { key: "s", label: "Seconds" },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col gap-1">
+                          <label className="text-xs text-center text-gray-400">
+                            {label}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            className={`${cls.input} text-center`}
+                            value={duration[key]}
+                            onChange={(e) =>
+                              setDuration((prev) => ({
+                                ...prev,
+                                [key]: +e.target.value || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3">
+                      <label className={cls.label}>Total Seconds</label>
+                      <input
+                        type="number"
+                        className={`${cls.input} text-center bg-gray-100`}
+                        value={totalSeconds}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className={cls.label}>
+                      Vest Duration (seconds — 1296000 = 15 days)
+                    </label>
+                    <input
+                      type="number"
+                      readOnly
+                      className={cls.input}
+                      value={form.vestDuration}
+                      onChange={setField("vestDuration")}
+                    />
                   </div>
                   <div>
-                    <label className={cls.label}>Lock Duration (seconds, 0 = none)</label>
-                    <input type="number" className={cls.input} value={form.lockDuration} onChange={setField('lockDuration')} />
-                  </div>
-                  <div>
-                    <label className={cls.label}>Vest Duration (seconds — 1296000 = 15 days)</label>
-                    <input type="number" className={cls.input} value={form.vestDuration} onChange={setField('vestDuration')} />
-                  </div>
-                  <div>
-                    <label className={cls.label}>Immediate Release Timestamp (defaults to end time)</label>
-                    <input type="datetime-local" className={cls.input} value={form.immediateReleaseTimestamp} onChange={setField('immediateReleaseTimestamp')} />
+                    <label className={cls.label}>
+                      Immediate Release Timestamp (defaults to end time)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className={cls.input}
+                      value={form.immediateReleaseTimestamp}
+                      onChange={setField("immediateReleaseTimestamp")}
+                      readOnly
+                    />
                   </div>
                 </div>
               )}
@@ -1455,10 +2040,14 @@ const Admin = () => {
               disabled={inProgress.create || inProgressAny}
               className={`w-full py-4 rounded-full font-bold text-lg border border-primary text-primary bg-secondary/20
                 flex items-center justify-center gap-2 transition-all
-                ${inProgress.create || inProgressAny ? 'cursor-not-allowed opacity-60' : 'hover:scale-[1.01] cursor-pointer active:scale-[0.99]'}`}
+                ${inProgress.create || inProgressAny ? "cursor-not-allowed opacity-60" : "hover:scale-[1.01] cursor-pointer active:scale-[0.99]"}`}
             >
-              {inProgress.create ? <Loader2 className="animate-spin" /> : <PlusCircle size={20} />}
-              {inProgress.create ? 'Creating Presale...' : 'Create Presale'}
+              {inProgress.create ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <PlusCircle size={20} />
+              )}
+              {inProgress.create ? "Creating Presale..." : "Create Presale"}
             </button>
 
             {/* New vault address result */}
@@ -1469,16 +2058,30 @@ const Admin = () => {
                   Presale created! Stats tab is now showing the new vault.
                 </p>
                 <p className="text-xs text-tertiary/60 mb-2">
-                  Set this address as <code className="bg-tertiary/10 px-1 rounded">VITE_PDA_MAINNET</code> in your .env and redeploy for the public site.
+                  Set this address as{" "}
+                  <code className="bg-tertiary/10 px-1 rounded">
+                    VITE_PDA_MAINNET
+                  </code>{" "}
+                  in your .env and redeploy for the public site.
                 </p>
                 <div className="flex items-center gap-2 bg-tertiary/5 border border-tertiary/10 rounded-lg px-3 py-2">
-                  <span className="font-mono text-xs flex-1 break-all text-tertiary">{newVaultAddress}</span>
-                  <button onClick={() => copyToClipboard(newVaultAddress)} className="text-tertiary/50 hover:text-primary cursor-pointer">
-                    {copied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
+                  <span className="font-mono text-xs flex-1 break-all text-tertiary">
+                    {newVaultAddress}
+                  </span>
+                  <button
+                    onClick={() => copyToClipboard(newVaultAddress)}
+                    className="text-tertiary/50 hover:text-primary cursor-pointer"
+                  >
+                    {copied ? (
+                      <CheckCircle2 size={16} className="text-green-400" />
+                    ) : (
+                      <Copy size={16} />
+                    )}
                   </button>
                 </div>
                 <p className="text-xs text-tertiary/50 mt-2">
-                  After setting the env var, fund the presale's base token account by transferring your LX tokens to it.
+                  After setting the env var, fund the presale's base token
+                  account by transferring your LX tokens to it.
                 </p>
               </div>
             )}
@@ -1486,14 +2089,15 @@ const Admin = () => {
         )}
 
         {/* ── MANAGE TAB ────────────────────────────────────────── */}
-        {activeTab === 'manage' && (
+        {activeTab === "manage" && (
           <div className="space-y-4">
-
             {/* Auth warning */}
             {!isCreator && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-center gap-3 text-yellow-400">
                 <AlertCircle size={18} />
-                <span className="text-sm">Connect the creator wallet to perform these actions.</span>
+                <span className="text-sm">
+                  Connect the creator wallet to perform these actions.
+                </span>
               </div>
             )}
 
@@ -1505,7 +2109,7 @@ const Admin = () => {
               btnActive={isCreator && isCompletedPresale}
               loading={inProgress.withdraw}
               loadingLabel="Withdrawing..."
-              onClick={handleWithdraw}
+              onClick={() => handleWithdraw("sol")}
             />
 
             {(stats?.depositFeeBps ?? 0) > 0 && (
@@ -1523,8 +2127,12 @@ const Admin = () => {
 
             <ActionCard
               icon={manageUnsoldIcon}
-              iconColor={unsoldActionIsRefund ? 'text-blue-400' : 'text-red-400'}
-              borderColor={unsoldActionIsRefund ? 'border-blue-500' : 'border-red-500'}
+              iconColor={
+                unsoldActionIsRefund ? "text-blue-400" : "text-red-400"
+              }
+              borderColor={
+                unsoldActionIsRefund ? "border-blue-500" : "border-red-500"
+              }
               title={manageUnsoldTitle}
               description={manageUnsoldDescription}
               btnLabel={manageUnsoldButton}
@@ -1534,18 +2142,37 @@ const Admin = () => {
               onClick={handleUnsoldAction}
             />
 
+            {isFailedPresale && (
+              <ActionCard
+              icon={RotateCcw}
+              iconColor="text-blue-400"
+              borderColor="border-blue-500"
+              title="Recover LX Tokens (Presale Failed)"
+              description="The presale did not reach its soft cap. Call creatorWithdraw
+              to recover your unsold LX tokens back to your wallet."
+              btnLabel="Recover LX"
+              btnActive={isCreator && isFailedPresale}
+              loading={inProgress.withdraw}
+              loadingLabel="Recovering..."
+              onClick={() => handleWithdraw("lx")}
+              />
+            )}
+
             {/* Refresh */}
             <button
               onClick={() => fetchStats()}
               disabled={loadingStats}
-              className="w-full py-3 rounded-xl text-sm text-tertiary/60 border border-tertiary/10 bg-tertiary/5 flex items-center justify-center gap-2 hover:bg-tertiary/10 transition-all cursor-pointer"
+              className="w-full py-3 rounded-3xl text-md text-primary border border-primary bg-primary/5 flex items-center justify-center gap-2 hover:bg-tertiary/10 transition-all cursor-pointer"
             >
-              {loadingStats ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+              {loadingStats ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <RotateCcw size={14} />
+              )}
               Refresh Presale Data
             </button>
           </div>
         )}
-
       </div>
     </div>
   );

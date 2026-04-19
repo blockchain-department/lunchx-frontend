@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-
+import { useLocation } from "react-router";
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const { publicKey , connected } = useWallet();
   const isConnected = connected;
   const address = publicKey?.toBase58();
   const [progress, setProgress] = useState(0);
+  const location = useLocation();
+  const pathname = location.pathname;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,6 +41,7 @@ const Header = () => {
     >
       <div className="container sm:px-0 px-6 mx-auto py-2">
         <div className="flex items-center justify-between">
+          <a href="https://launchxcoin.io/">
           <div
             className="flex items-center gap-2 hover:cursor-pointer"
             onClick={() => handleScrollIntoView("#hero")}
@@ -54,37 +57,44 @@ const Header = () => {
               LaunchX
             </span>
           </div>
-
+          </a>
           <nav className="hidden md:flex items-center gap-8">
+            { pathname === "/" ? (
             <h1
               onClick={() => handleScrollIntoView("#about")}
               to="#about"
               className="hover:cursor-pointer hover:scale-120 hover:text-primary text-lg text-tertiary transition-colors font-semibold duration-300"
             >
               About
-            </h1>
+            </h1> ) : null
+            }
+            {pathname === "/" ? (
             <h1
               onClick={() => handleScrollIntoView("#tokenomics")}
               to="#tokenomics"
               className="hover:cursor-pointer text-lg hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold duration-300"
             >
               Tokenomics
-            </h1>
+            </h1> ) : null
+            }
+            {pathname === "/" ? ( 
             <h1
               onClick={() => handleScrollIntoView("#roadmap")}
               to="#roadmap"
               className="hover:cursor-pointer text-lg hover:scale-120 text-tertiary hover:text-primary transition-colors font-semibold duration-300"
             >
               Roadmap
-            </h1>
-
+            </h1> ) : null
+            }
+            {pathname === "/" ? (
             <h1
               onClick={() => handleScrollIntoView("#presale")}
               to="#holdings"
               className="hover:cursor-pointer text-lg hover:scale-120 hover:text-primary text-tertiary transition-colors font-semibold duration-300"
             >
               Presale
-            </h1>
+            </h1> ) : null
+            }
           </nav>
 
           <div className="flex  items-center justify-between gap-2 ">
