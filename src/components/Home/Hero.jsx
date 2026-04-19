@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import CountDown from "./CountDown";
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA } from "../../utilities/config";
+import { PRESALE_PROGRAM_ID } from "../../utilities/config";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Presale } from '@meteora-ag/presale';
 import { useState } from "react";
@@ -12,7 +12,8 @@ const Hero = () => {
   const containerRef = useRef(null);
   const { connection } = useConnection();
   const [timeLeft,setTimeLeft] = useState(null);
-  const {timeOver,presaleProgress,updateAll,vestingOver} = useTimeStore();
+  const {timeOver,presaleProgress,updateAll,vestingOver,prealeVaultPda} = useTimeStore();
+  const [timeLeftPresale,setTimeLeftPresale] = useState(null);
 
   const handleScrollIntoView = (id) => {
     const element = document.querySelector(id);
@@ -28,15 +29,18 @@ const Hero = () => {
   }, []);
 
   useEffect(() => {
-      fetchClaimableAmount();
-  }, []);
+    if(!prealeVaultPda){
+      return;
+    }
+    fetchClaimableAmount();
+  }, [prealeVaultPda]);
 
   const fetchClaimableAmount = async () => {
     try {
 
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(prealeVaultPda),  // vault/presale address
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
       const decimals = 9;
@@ -47,6 +51,16 @@ const Hero = () => {
       const endTime = presaleData.presaleAccount.presaleEndTime.toString();
 
       const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
+
+      const startTime = presaleData.presaleAccount.presaleStartTime.toString();
+
+      const secondsLeftStart = Math.floor((startTime * 1000 - Date.now()) / 1000);
+
+      if(secondsLeftStart <= 0){
+        setTimeLeftPresale(0);
+      }else{
+        setTimeLeftPresale(secondsLeftStart);
+      }
 
       // const vestingEndTime = presaleData.presaleAccount.presaleEndTime.toString();
 
@@ -84,7 +98,7 @@ const Hero = () => {
     
     const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(prealeVaultPda),  // vault/presale address
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
       const decimals = 9;
@@ -176,10 +190,12 @@ const Hero = () => {
             </button>
           </div>
 
-          <h1 className="text-2xl font-bold mb-6">{!timeOver ? "Presale Ends In" : vestingOver ? "Vesting Ended" : "Vesting Ends In"}</h1>
+          {prealeVaultPda && <h1 className="text-2xl font-bold mb-6">{presaleProgress == 0 ? "Presale Starts In" : !timeOver ? "Presale Ends In" : vestingOver ? "Vesting Ended" : "Vesting Ends In"}</h1>}
+          {!prealeVaultPda && <h1 className="text-2xl font-bold mb-6">PRESALE HAS NOT STARTED YET!</h1>}
 
-          {(presaleProgress == 0 || presaleProgress == 1) && <CountDown remainingTime={timeLeft} type="presale"/>}
-          {(presaleProgress == 2 || presaleProgress == 3) && <CountDown remainingTime={timeLeft} type="vesting"/>}
+          {((presaleProgress == 1) && prealeVaultPda) && <CountDown remainingTime={timeLeft} type="presale"/>}
+          {((presaleProgress == 2 || presaleProgress == 3) && prealeVaultPda) && <CountDown remainingTime={timeLeft} type="vesting"/>}
+          {((presaleProgress == 0) && prealeVaultPda) && <CountDown remainingTime={timeLeftPresale} type="presale-not-started"/>}
         </div>
       </div>
  

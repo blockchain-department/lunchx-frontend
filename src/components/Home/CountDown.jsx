@@ -36,7 +36,7 @@ const TimeBlock = ({ value, label }) => {
 };
 
 const CountDown = ({ remainingTime = 0 , type}) => {
-  const { setTimeOver, setVestingOver , presaleProgress } = useTimeStore();
+  const { setTimeOver, setVestingOver , presaleProgress, setStarted } = useTimeStore();
   const [time,setTime] = useState(remainingTime);
 
   useEffect(() => {
@@ -61,6 +61,9 @@ useEffect(() => {
     // ✅ Only fire if time actually counted down, not if it arrived as 1
     if (type === "vesting" && (presaleProgress == 2 || presaleProgress == 3)) {
       setVestingOver(true);
+    }
+    if(type === "presale-not-started"){
+      setStarted(true);
     }
   }
   if(type === "vesting" && presaleProgress == 3){

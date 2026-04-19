@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, network } from '../../utilities/config';
+import { PRESALE_PROGRAM_ID, network } from '../../utilities/config';
 import { Presale, getOnChainTimestamp } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
@@ -31,7 +31,7 @@ const PresaleComp = () => {
   // canWithdrawRemainingQuoteAmount() on every fetchClaimableAmount call.
   const [canClaim, setCanClaim] = useState(false);
   const [canRefund, setCanRefund] = useState(false);
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll} = useTimeStore();
+  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll, started, prealeVaultPda, setPrealeVaultPda} = useTimeStore();
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
@@ -42,6 +42,33 @@ const PresaleComp = () => {
   const isConnected = connected;
 
   const EXCHANGE_RATE = solPrice/0.0042;
+
+  useEffect(() => {
+    async function getUserVaultsEfficiently() {
+      const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
+      const creatorBytes = publicKeyEnv.toBase58(); // For memcmp
+      const programID = new PublicKey(PRESALE_PROGRAM_ID);
+      const accounts = await connection.getProgramAccounts(programID, {
+        encoding: 'base64', // Or 'jsonParsed' if supported
+        filters: [
+          // { dataSize: 1234 }, // Get from Solscan/raw data
+          {
+            memcmp: {
+              offset: 8, // Adjust: 0=discriminator (8 bytes), 8=creator (32 bytes)
+              bytes: creatorBytes,
+            },
+          },
+        ],
+      });
+      // Deserialize/parse accounts as needed
+      console.log(accounts);
+      if(accounts.length > 0){
+        console.log(accounts[accounts.length - 1].pubkey.toBase58());
+        setPrealeVaultPda(accounts[accounts.length - 1].pubkey.toBase58());
+      }
+    }
+    getUserVaultsEfficiently();
+  }, [publicKey,connection,PRESALE_PROGRAM_ID]);
 
   useEffect(() => {
       const fetchCryptoPrices = async () => {
@@ -88,7 +115,7 @@ const PresaleComp = () => {
     try {
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(prealeVaultPda),  // vault/presale address
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
 
@@ -104,21 +131,6 @@ const PresaleComp = () => {
       depositTx.recentBlockhash = blockhash;
       depositTx.lastValidBlockHeight = lastValidBlockHeight;
       depositTx.feePayer = publicKey;
-
-      try {
-        const simResult = await connection.simulateTransaction(depositTx);
-        if (simResult.value.err) {
-          console.error("Simulation error:", simResult.value.err);
-          console.error("Logs:", simResult.value.logs);
-          toast.error("Transaction would fail. Check console for details.");
-          return;
-        }
-      } catch (simError) {
-        console.error("Could not simulate:", simError);
-        toast.error("Transaction would fail. Check console for details.");
-        setInProgress(prev => ({...prev,deposit:false}));
-        return;
-      }      
 
       const txSig = await sendTransaction(depositTx, connection, {
           skipPreflight: true,
@@ -164,7 +176,7 @@ const PresaleComp = () => {
     setInProgress(prev => ({...prev, withdraw: true}));
     try {
       const presaleInstance = await Presale.create(
-        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+        connection, new PublicKey(prealeVaultPda), new PublicKey(PRESALE_PROGRAM_ID)
       );
       const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
       const txs = await Promise.all(
@@ -200,7 +212,7 @@ const PresaleComp = () => {
     setInProgress(prev => ({...prev, claim: true}));
     try {
       const presaleInstance = await Presale.create(
-        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+        connection, new PublicKey(prealeVaultPda), new PublicKey(PRESALE_PROGRAM_ID)
       );
       const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
       const txs = await Promise.all(
@@ -237,7 +249,7 @@ const PresaleComp = () => {
     try {
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),
+        new PublicKey(prealeVaultPda),
         new PublicKey(PRESALE_PROGRAM_ID)
       );
 
@@ -297,7 +309,7 @@ const PresaleComp = () => {
 
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(prealeVaultPda),  // vault/presale address
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
       const decimals = 9;
@@ -407,7 +419,7 @@ const PresaleComp = () => {
   }
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && prealeVaultPda) {
       updateAllBalances();
     }else{
       setSolBalance(0);
@@ -417,7 +429,7 @@ const PresaleComp = () => {
       setHardcap(0);
       setTotalDepositedSol(0);
     }
-  }, [isConnected,address]);
+  }, [isConnected,address,prealeVaultPda]);
   
   useEffect(() => {
 
@@ -434,6 +446,14 @@ const PresaleComp = () => {
       }, 3000);
     }
   }, [timeOver,vestingOver]);
+
+  useEffect(() => {
+    if(started){
+      setTimeout(() => {
+        updateAllBalances();
+      }, 3000);
+    }
+  }, [started]);
 
   
 
@@ -614,7 +634,7 @@ const PresaleComp = () => {
           </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Vault Address</span>
-            <span className="text-primary text-[16px]">{PRESALE_VAULT_PDA}</span>
+            <span className="text-primary text-[16px]">{prealeVaultPda ? prealeVaultPda : "PRESALE HAS NOT STARTED YET!"}</span>
           </div>
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Deposited SOL</span>
