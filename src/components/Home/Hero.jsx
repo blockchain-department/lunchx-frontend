@@ -33,7 +33,7 @@ const Hero = () => {
       return;
     }
     fetchClaimableAmount();
-  }, [prealeVaultPda]);
+  }, [prealeVaultPda,presaleProgress]);
 
   const fetchClaimableAmount = async () => {
     try {
