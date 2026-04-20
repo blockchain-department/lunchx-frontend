@@ -514,6 +514,9 @@ const PresaleComp = () => {
   useEffect(() => {
     if(started){
       setTimeout(() => {
+        if(prealeVaultPda){
+          fetchGlobalPdaData();
+        }
         updateAllBalances();
       }, 3000);
     }
