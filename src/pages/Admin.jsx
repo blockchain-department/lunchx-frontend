@@ -1,12 +1,6 @@
-<<<<<<< HEAD
 import { useState, useEffect, useCallback, createElement } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-=======
-import { useState, useEffect } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 import {
   PublicKey,
   Keypair,
@@ -27,7 +21,6 @@ import {
 import {
   createCreateMetadataAccountV3Instruction,
   PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
-<<<<<<< HEAD
 } from '@metaplex-foundation/mpl-token-metadata';
 import { Presale, derivePresale, Rounding, calculateMaximumQuoteAmountForPresaleSupply } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
@@ -43,47 +36,6 @@ import {
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, TOKEN_METADATA_URI, network } from '../utilities/config';
 import decimalToBN from '../utilities/decimalToBN';
 import formatSolanaError from '../utilities/formatSolanaError';
-=======
-} from "@metaplex-foundation/mpl-token-metadata";
-import {
-  Presale,
-  derivePresale,
-  Rounding,
-  calculateMaximumQuoteAmountForPresaleSupply,
-} from "@meteora-ag/presale";
-import { BN } from "bn.js";
-import Decimal from "decimal.js";
-import toast from "react-hot-toast";
-import {
-  Loader2,
-  ShieldCheck,
-  BarChart3,
-  Settings,
-  PlusCircle,
-  Download,
-  Coins,
-  Users,
-  TrendingUp,
-  Lock,
-  Flame,
-  RotateCcw,
-  DollarSign,
-  AlertCircle,
-  Copy,
-  CheckCircle2,
-  RefreshCw,
-  PackagePlus,
-  Zap,
-  XCircle,
-  Circle,
-  MinusCircle,
-} from "lucide-react";
-import {
-  PRESALE_PROGRAM_ID,
-  PRESALE_VAULT_PDA,
-  TOKEN_METADATA_URI,
-} from "../utilities/config";
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 
 const WSOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -118,33 +70,10 @@ const cls = {
 // Token-2022 mint + metadata init often exceeds the default ~200k CU; Phantom surfaces that as "Unexpected error".
 const DEPLOY_COMPUTE_UNITS = 600_000;
 const DEPLOY_MIN_FEE_BUFFER_LAMPORTS = 20_000_000; // 0.02 SOL buffer for tx fees/retries
-<<<<<<< HEAD
 const CLUSTER_GENESIS_HASHES = {
   devnet: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
   'mainnet-beta': '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
 };
-=======
-
-/** Pull useful text from WalletSendTransactionError / nested SendTransactionError (Phantom often wraps the real reason). */
-function formatSolanaSendError(err) {
-  const inner = err?.error?.error ?? err?.error ?? err;
-  const logs = inner?.transactionLogs ?? inner?.logs;
-  if (Array.isArray(logs) && logs.length) {
-    return logs.slice(-10).join(" · ");
-  }
-  if (inner?.transactionMessage) return String(inner.transactionMessage);
-  if (
-    inner?.message &&
-    !/^unexpected error$/i.test(String(inner.message).trim())
-  ) {
-    return inner.message;
-  }
-  return (
-    err?.message ??
-    "Check devnet SOL for rent + fees, wallet on Devnet, then approve each signature."
-  );
-}
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 
 function lamportsToSol(lamports) {
   return Number(lamports || 0) / 1e9;
@@ -226,7 +155,6 @@ function smallestUnitAsDecimalString(decimals) {
   return `0.${"0".repeat(decimals - 1)}1`;
 }
 
-<<<<<<< HEAD
 function isValidPublicKeyString(value) {
   try {
     new PublicKey(String(value ?? '').trim());
@@ -234,21 +162,6 @@ function isValidPublicKeyString(value) {
   } catch {
     return false;
   }
-=======
-function decimalToBN(value, decimals = 0) {
-  const normalized = String(value ?? "0").trim();
-  if (!/^\d+(\.\d+)?$/.test(normalized)) {
-    throw new Error(`Invalid numeric value: ${value}`);
-  }
-
-  const [wholePart, fractionPart = ""] = normalized.split(".");
-  const paddedFraction = (fractionPart + "0".repeat(decimals)).slice(
-    0,
-    decimals,
-  );
-  const combined = `${wholePart}${paddedFraction}`.replace(/^0+(?=\d)/, "");
-  return new BN(combined || "0", 10);
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 }
 
 function StatCard({ label, value, icon: Icon }) {
@@ -290,15 +203,7 @@ function ActionCard({
             className={`px-6 py-3 rounded-full font-semibold text-sm border ${borderColor} ${iconColor} bg-secondary/20 flex items-center gap-2 transition-all
               ${!btnActive || loading ? "cursor-not-allowed opacity-40" : "hover:scale-[1.02] cursor-pointer active:scale-[0.98]"}`}
           >
-<<<<<<< HEAD
             {loading ? <Loader2 size={16} className="animate-spin" /> : createElement(Icon, { size: 16 })}
-=======
-            {loading ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Icon size={16} />
-            )}
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
             {loading ? loadingLabel : btnLabel}
           </button>
         </div>
@@ -344,22 +249,6 @@ const Admin = () => {
 
   const inProgressAny = Object.values(inProgress).some(Boolean);
 
-<<<<<<< HEAD
-=======
-  // ── Effects ─────────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchStats();
-    } else {
-      setStats(null);
-      setIsCreator(false);
-      setPresaleInstance(null);
-      setStatsVaultOverride(null); // revert to env vault on disconnect
-    }
-  }, [connected, publicKey?.toBase58()]);
-
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
   // ── Data fetching ────────────────────────────────────────────────────────────
 
   /**
@@ -369,39 +258,9 @@ const Admin = () => {
    *   window before setStatsVaultOverride has settled. When null, reads
    *   statsVaultOverride state, then falls back to env PRESALE_VAULT_PDA.
    */
-<<<<<<< HEAD
   const fetchStats = useCallback(async (explicitVault = null) => {
     const targetVault = explicitVault ?? statsVaultOverride ?? PRESALE_VAULT_PDA;
-=======
-  const fetchStats = async (explicitVault = null) => {
 
-    const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
-    const creatorBytes = publicKeyEnv.toBase58(); // For memcmp
-    const programID = new PublicKey(PRESALE_PROGRAM_ID);
-    const accounts = await connection.getProgramAccounts(programID, {
-      encoding: 'base64', // Or 'jsonParsed' if supported
-      filters: [
-        // { dataSize: 1234 }, // Get from Solscan/raw data
-        {
-          memcmp: {
-            offset: 8, // Adjust: 0=discriminator (8 bytes), 8=creator (32 bytes)
-            bytes: creatorBytes,
-          },
-        },
-      ],
-    });
-
-    let targetVault = null;
-
-    // Deserialize/parse accounts as needed
-    console.log(accounts);
-    if(accounts.length > 0){
-      console.log(accounts[accounts.length - 1].pubkey.toBase58());
-      targetVault = accounts[accounts.length - 1].pubkey.toBase58();
-    }
-
-
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     if (!targetVault) {
       setStats(null);
       setIsCreator(false);
@@ -492,13 +351,8 @@ const Admin = () => {
 
       setIsCreator(!!(publicKey && creatorStr === publicKey.toBase58()));
     } catch (err) {
-<<<<<<< HEAD
       console.error(err);
       toast.error(formatSolanaError(err));
-=======
-      console.log(err);
-      toast.error("Failed to load presale data");
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     } finally {
       setLoadingStats(false);
     }
@@ -599,13 +453,16 @@ const Admin = () => {
 
   // ── Admin actions ────────────────────────────────────────────────────────────
 
-<<<<<<< HEAD
-  const handleWithdraw = async () => {
+  const handleWithdraw = async (type) => {
     setInProgress(p => ({ ...p, withdraw: true }));
     try {
       const tx = await presaleInstance.creatorWithdraw({ creator: publicKey });
       await sendTx(tx);
-      toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
+      if (type === "sol") {
+        toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
+      } else if (type === "lx") {
+        toast.success("LX tokens withdrawn successfully");
+      }
       fetchStats();
     } catch (err) {
       console.error(err);
@@ -614,26 +471,6 @@ const Admin = () => {
       setInProgress(p => ({ ...p, withdraw: false }));
     }
   };
-=======
-  const handleWithdraw = async (type) => {
-setInProgress((p) => ({ ...p, withdraw: true }));
-try {
-const tx = await presaleInstance.creatorWithdraw({ creator: publicKey });
-await sendTx(tx);
-if (type === "sol") {
-toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
-} else if (type === "lx") {
-toast.success("LX tokens withdrawn successfully");
-}
-fetchStats();
-} catch (err) {
-console.log(err);
-toast.error("Withdrawal failed");
-} finally {
-setInProgress((p) => ({ ...p, withdraw: false }));
-}
-};
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
 
   const handleCollectFee = async () => {
     setInProgress((p) => ({ ...p, collectFee: true }));
@@ -642,13 +479,8 @@ setInProgress((p) => ({ ...p, withdraw: false }));
       await sendTx(tx);
       toast.success("Fees collected");
     } catch (err) {
-<<<<<<< HEAD
       console.error(err);
       toast.error(formatSolanaError(err));
-=======
-      console.log(err);
-      toast.error("Fee collection failed");
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     } finally {
       setInProgress((p) => ({ ...p, collectFee: false }));
     }
@@ -669,13 +501,8 @@ setInProgress((p) => ({ ...p, withdraw: false }));
       toast.success("Unsold token action completed");
       fetchStats();
     } catch (err) {
-<<<<<<< HEAD
       console.error(err);
       toast.error(formatSolanaError(err));
-=======
-      console.log(err);
-      toast.error("Action failed");
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     } finally {
       setInProgress((p) => ({ ...p, unsoldAction: false }));
     }
@@ -878,14 +705,13 @@ setInProgress((p) => ({ ...p, withdraw: false }));
   // ── Create presale ────────────────────────────────────────────────────────────
 
   const [duration, setDuration] = useState({ d: 0, h: 0, m: 0, s: 0 });
-  const totalSeconds =
-    duration.d * 86400 + // days → seconds
-    duration.h * 3600 + // hours → seconds
-    duration.m * 60 + // minutes → seconds
-    duration.s;
+  const totalSeconds =
+    duration.d * 86400 + // days → seconds
+    duration.h * 3600 + // hours → seconds
+    duration.m * 60 + // minutes → seconds
+    duration.s;
 
   const handleCreate = async () => {
-<<<<<<< HEAD
     if (!publicKey) {
       toast.error('Connect your creator wallet before creating a presale.');
       return;
@@ -893,16 +719,6 @@ setInProgress((p) => ({ ...p, withdraw: false }));
 
     if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !derivedHardCapDisplay) {
       toast.error('Fill in all required fields (*)');
-=======
-    if (
-      !form.baseMint ||
-      !form.startTime ||
-      !form.endTime ||
-      !form.totalSupply ||
-      !derivedHardCapDisplay
-    ) {
-      toast.error("Fill in all required fields (*)");
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       return;
     }
 
@@ -919,7 +735,6 @@ setInProgress((p) => ({ ...p, withdraw: false }));
       return;
     }
 
-<<<<<<< HEAD
     if (!isValidPublicKeyString(form.baseMint)) {
       toast.error('Base token mint must be a valid Solana public key.');
       return;
@@ -938,16 +753,6 @@ setInProgress((p) => ({ ...p, withdraw: false }));
     const maxDeposit = parseFloat(form.maxDeposit || hardcapRaw || '0');
     const depositFeeBps = parseInt(form.depositFeeBps || '0', 10);
     const tokenDecimals = parseInt(form.tokenDecimals || '9', 10);
-=======
-    const hardcap = parseFloat(derivedHardCapDisplay || "0");
-    const hardcapRaw = derivedHardCapDisplay || "0";
-    const softcap = parseFloat(form.softcap || "0");
-    const totalSupply = parseFloat(form.totalSupply || "0");
-    const minDepositInput = parseFloat(form.minDeposit || "0");
-    const maxDeposit = parseFloat(form.maxDeposit || hardcapRaw || "0");
-    const depositFeeBps = parseInt(form.depositFeeBps || "0", 10);
-    const tokenDecimals = parseInt(form.tokenDecimals || "9", 10);
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     const quoteDecimals = getQuoteMintDecimals(form.quoteMint);
     const minDeposit =
       minDepositInput > 0 ? minDepositInput : 1 / Math.pow(10, quoteDecimals);
@@ -992,8 +797,8 @@ setInProgress((p) => ({ ...p, withdraw: false }));
     if (form.enableVesting) {
       const immediateReleaseBps = parseInt(form.immediateReleaseBps || "0", 10);
       const lockDuration =
-        duration.d * 86400 + duration.h * 3600 + duration.m * 60 + duration.s;
-      console.log("lockDuration", lockDuration);
+        duration.d * 86400 + duration.h * 3600 + duration.m * 60 + duration.s;
+      console.log("lockDuration", lockDuration);
       const vestDuration = parseInt(form.vestDuration || "0", 10);
       immediateReleaseTs = form.immediateReleaseTimestamp
         ? Math.floor(new Date(form.immediateReleaseTimestamp).getTime() / 1000)
@@ -1015,7 +820,6 @@ setInProgress((p) => ({ ...p, withdraw: false }));
       }
     }
 
-<<<<<<< HEAD
     try {
       decimalToBN(form.totalSupply, tokenDecimals);
       decimalToBN(form.softcap || '0', quoteDecimals);
@@ -1046,15 +850,6 @@ setInProgress((p) => ({ ...p, withdraw: false }));
 
     try {
       const programId      = new PublicKey(PRESALE_PROGRAM_ID);
-=======
-    setInProgress((p) => ({ ...p, create: true }));
-    setNewVaultAddress("");
-
-    try {
-      const dec = Math.pow(10, tokenDecimals);
-      const solDec = 1e9;
-      const programId = new PublicKey(PRESALE_PROGRAM_ID);
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       const baseMintPubkey = new PublicKey(form.baseMint);
       const quoteMintPubkey = new PublicKey(form.quoteMint);
       const presalePubkey = derivePresale(
@@ -1162,13 +957,8 @@ setInProgress((p) => ({ ...p, withdraw: false }));
       await fetchStats(vaultAddr);
       toast.success("Presale created! Stats tab now shows the new vault.");
     } catch (err) {
-<<<<<<< HEAD
       console.error('[Admin] Presale creation failed', err);
       const detail = formatSolanaError(err);
-=======
-      console.error("[Admin] Presale creation failed", err);
-      const detail = formatSolanaSendError(err);
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       toast.error(`Presale creation failed: ${detail}`);
     } finally {
       setInProgress((p) => ({ ...p, create: false }));
@@ -1965,47 +1755,47 @@ setInProgress((p) => ({ ...p, withdraw: false }));
                   </div>
 
                   <div>
-                    <label className={cls.label}>
-                      Lock Duration (0 = none)
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { key: "d", label: "Days" },
-                        { key: "h", label: "Hours" },
-                        { key: "m", label: "Minutes" },
-                        { key: "s", label: "Seconds" },
-                      ].map(({ key, label }) => (
-                        <div key={key} className="flex flex-col gap-1">
-                          <label className="text-xs text-center text-gray-400">
-                            {label}
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            className={`${cls.input} text-center`}
-                            value={duration[key]}
-                            onChange={(e) =>
-                              setDuration((prev) => ({
-                                ...prev,
-                                [key]: +e.target.value || 0,
-                              }))
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <label className={cls.label}>
+                      Lock Duration (0 = none)
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { key: "d", label: "Days" },
+                        { key: "h", label: "Hours" },
+                        { key: "m", label: "Minutes" },
+                        { key: "s", label: "Seconds" },
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex flex-col gap-1">
+                          <label className="text-xs text-center text-gray-400">
+                            {label}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            className={`${cls.input} text-center`}
+                            value={duration[key]}
+                            onChange={(e) =>
+                              setDuration((prev) => ({
+                                ...prev,
+                                [key]: +e.target.value || 0,
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
 
-                    <div className="mt-3">
-                      <label className={cls.label}>Total Seconds</label>
-                      <input
-                        type="number"
-                        className={`${cls.input} text-center bg-gray-100`}
-                        value={totalSeconds}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                  
+                    <div className="mt-3">
+                      <label className={cls.label}>Total Seconds</label>
+                      <input
+                        type="number"
+                        className={`${cls.input} text-center bg-gray-100`}
+                        value={totalSeconds}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className={cls.label}>
                       Vest Duration (seconds — 1296000 = 15 days)

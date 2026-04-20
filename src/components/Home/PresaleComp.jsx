@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useState, useEffect, useCallback } from 'react';
-=======
-import { useState, useEffect, useRef } from 'react';
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { PRESALE_PROGRAM_ID, network } from '../../utilities/config';
@@ -36,11 +32,7 @@ const PresaleComp = () => {
   // canWithdrawRemainingQuoteAmount() on every fetchClaimableAmount call.
   const [canClaim, setCanClaim] = useState(false);
   const [canRefund, setCanRefund] = useState(false);
-<<<<<<< HEAD
-  const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver } = useTimeStore();
-=======
   const { timeOver , vestingOver , presaleProgress , setPresaleProgress , setTimeOver , setVestingOver , updateAll, started, prealeVaultPda, setPrealeVaultPda} = useTimeStore();
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
   const [totalClaimableLx, setTotalClaimableLx] = useState(0);
   const [solPrice, setSolPrice] = useState(0);
   const [activeTab,setActiveTab] = useState("Deposit");
@@ -52,28 +44,22 @@ const PresaleComp = () => {
 
   const EXCHANGE_RATE = solPrice/0.0042;
 
-<<<<<<< HEAD
-  const fetchClaimableAmount = useCallback(async () => {
-    if (!publicKey) return;
-=======
   useEffect(() => {
     async function getUserVaultsEfficiently() {
       const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
-      const creatorBytes = publicKeyEnv.toBase58(); // For memcmp
+      const creatorBytes = publicKeyEnv.toBase58();
       const programID = new PublicKey(PRESALE_PROGRAM_ID);
       const accounts = await connection.getProgramAccounts(programID, {
-        encoding: 'base64', // Or 'jsonParsed' if supported
+        encoding: 'base64',
         filters: [
-          // { dataSize: 1234 }, // Get from Solscan/raw data
           {
             memcmp: {
-              offset: 8, // Adjust: 0=discriminator (8 bytes), 8=creator (32 bytes)
+              offset: 8,
               bytes: creatorBytes,
             },
           },
         ],
       });
-      // Deserialize/parse accounts as needed
       console.log(accounts);
       if(accounts.length > 0){
         console.log(accounts[accounts.length - 1].pubkey.toBase58());
@@ -83,239 +69,8 @@ const PresaleComp = () => {
     getUserVaultsEfficiently();
   }, [publicKey,connection,PRESALE_PROGRAM_ID]);
 
-  useEffect(() => {
-      const fetchCryptoPrices = async () => {
-      try {
-          const response = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-          );
-          const data = await response.json();
-          setSolPrice(data.solana.usd);
-      } catch (error) {
-          setSolPrice(84);
-      }
-      };
-      fetchCryptoPrices();
-  }, []);
-
-  const depositTokens = async () => {
-
-    if(!isConnected){
-      toast.error("Please connect your wallet");
-      return;
-    }
-
-    if(solAmount <= 0){
-      toast.error("Please enter a valid amount");
-      return;
-    }
-
-    if(solAmount > solBalance){
-      toast.error("Insufficient balance");
-      return;
-    }
-
-    setInProgress(prev => ({...prev,deposit:true}));
-
-    
-
-    try {
-      const presaleInstance = await Presale.create(
-        connection,
-        new PublicKey(prealeVaultPda),  // vault/presale address
-        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
-      );
-
-      
-
-      const depositTx = await presaleInstance.deposit({
-        amount: new BN(parseFloat(solAmount) * 1e9),  // 0.1 SOL
-        owner: new PublicKey(address),
-        registryIndex: new BN(0)  // Default
-      });
-
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      depositTx.recentBlockhash = blockhash;
-      depositTx.lastValidBlockHeight = lastValidBlockHeight;
-      depositTx.feePayer = publicKey;
-
-      const txSig = await sendTransaction(depositTx, connection, {
-          skipPreflight: true,
-          maxRetries: 0,
-          preflightCommitment: "confirmed",
-      });
-      
-
-      await connection.confirmTransaction(
-        {
-          signature: txSig,
-          lastValidBlockHeight: depositTx.lastValidBlockHeight,
-          blockhash: depositTx.recentBlockhash,
-        },
-        "finalized"
-      );
-
-      updateAllBalances();
-
-      setInProgress(prev => ({...prev,deposit:false}));
-
-      setSolAmount(0);
-
-      
-      toast.success("Transaction Confirmed");
-      
-    } catch (error) {
-      
-      // toast.error("Transaction Failed");
-      setInProgress(prev => ({...prev,deposit:false}));
-    }
-    
-  };
-
-  // Partial withdrawal during Ongoing (state 1). Requires a SOL amount input.
-  // Must NOT be called after completion — use claimTokens() for state 2.
-  const withdrawPartial = async () => {
-    if (!isConnected) { toast.error("Please connect your wallet"); return; }
-    if (solAmount <= 0) { toast.error("Please enter a valid amount"); return; }
-    if (solAmount > solBalance) { toast.error("Insufficient balance"); return; }
-    if (solAmount > depositedSol) { toast.error("Amount more than deposited"); return; }
-
-    setInProgress(prev => ({...prev, withdraw: true}));
-    try {
-      const presaleInstance = await Presale.create(
-        connection, new PublicKey(prealeVaultPda), new PublicKey(PRESALE_PROGRAM_ID)
-      );
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
-      const txs = await Promise.all(
-        escrows.map(escrow => {
-          const s = escrow.getEscrowAccount();
-          return presaleInstance.withdraw({
-            amount: new BN(parseFloat(solAmount) * 1e9),
-            owner: s.owner,
-            registryIndex: new BN(s.registryIndex),
-          });
-        })
-      );
-      await Promise.all(txs.map(async tx => {
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        tx.recentBlockhash = blockhash; tx.lastValidBlockHeight = lastValidBlockHeight; tx.feePayer = publicKey;
-        const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 0 });
-        await connection.confirmTransaction({ signature: sig, lastValidBlockHeight: tx.lastValidBlockHeight, blockhash: tx.recentBlockhash }, "finalized");
-      }));
-      updateAllBalances();
-      setInProgress(prev => ({...prev, withdraw: false}));
-      toast.success("Transaction Confirmed");
-    } catch (error) {
-      setInProgress(prev => ({...prev, withdraw: false}));
-    }
-  };
-
-  // Claim purchased tokens after Completed (state 2) + vestingStartTime passed (canClaim true).
-  // No amount input — claims all pending tokens across all escrows.
-  // activeTab is intentionally NOT read here; call site (Claim button) already gates on canClaim.
-  const claimTokens = async () => {
-    if (!isConnected) { toast.error("Please connect your wallet"); return; }
-
-    setInProgress(prev => ({...prev, claim: true}));
-    try {
-      const presaleInstance = await Presale.create(
-        connection, new PublicKey(prealeVaultPda), new PublicKey(PRESALE_PROGRAM_ID)
-      );
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
-      const txs = await Promise.all(
-        escrows.map(escrow => {
-          const s = escrow.getEscrowAccount();
-          return presaleInstance.claim({ owner: s.owner, registryIndex: new BN(s.registryIndex) });
-        })
-      );
-      await Promise.all(txs.map(async tx => {
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        tx.recentBlockhash = blockhash; tx.lastValidBlockHeight = lastValidBlockHeight; tx.feePayer = publicKey;
-        const sig = await sendTransaction(tx, connection, { skipPreflight: false, maxRetries: 0 });
-        await connection.confirmTransaction({ signature: sig, lastValidBlockHeight: tx.lastValidBlockHeight, blockhash: tx.recentBlockhash }, "finalized");
-      }));
-      updateAllBalances();
-      setInProgress(prev => ({...prev, claim: false}));
-      toast.success("Transaction Confirmed");
-    } catch (error) {
-      setInProgress(prev => ({...prev, claim: false}));
-    }
-  };
-
-  // Refund remaining quote tokens.
-  // Called when presale Failed (state 3) OR Completed + Prorata (canWithdrawRemainingQuote).
-  // Uses withdrawRemainingQuote(), NOT withdraw() — the latter is for partial mid-presale exits.
-  const refundTokens = async () => {
-    if (!isConnected) {
-      toast.error("Please connect your wallet");
-      return;
-    }
-
-    setInProgress(prev => ({...prev, refund: true}));
-
-    try {
-      const presaleInstance = await Presale.create(
-        connection,
-        new PublicKey(prealeVaultPda),
-        new PublicKey(PRESALE_PROGRAM_ID)
-      );
-
-      const parsedPresale = presaleInstance.getParsedPresale();
-      const escrows = await presaleInstance.getPresaleEscrowByOwner(new PublicKey(address));
-
-      const refundableTxs = await Promise.all(
-        escrows
-          .filter(escrow => escrow.canWithdrawRemainingQuoteAmount(parsedPresale))
-          .map(escrow => {
-            const escrowState = escrow.getEscrowAccount();
-            return presaleInstance.withdrawRemainingQuote({
-              owner: escrowState.owner,
-              registryIndex: new BN(escrowState.registryIndex),
-            });
-          })
-      );
-
-      if (refundableTxs.length === 0) {
-        toast.error("No refundable amount available");
-        setInProgress(prev => ({...prev, refund: false}));
-        return;
-      }
-
-      await Promise.all(
-        refundableTxs.map(async (refundTx) => {
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-          refundTx.recentBlockhash = blockhash;
-          refundTx.lastValidBlockHeight = lastValidBlockHeight;
-          refundTx.feePayer = publicKey;
-
-          const txSig = await sendTransaction(refundTx, connection, {
-            skipPreflight: false,
-            maxRetries: 0,
-          });
-
-          await connection.confirmTransaction(
-            { signature: txSig, lastValidBlockHeight: refundTx.lastValidBlockHeight, blockhash: refundTx.recentBlockhash },
-            "finalized"
-          );
-        })
-      );
-
-      updateAllBalances();
-      setInProgress(prev => ({...prev, refund: false}));
-      toast.success("Refund successful");
-    } catch (error) {
-      setInProgress(prev => ({...prev, refund: false}));
-    }
-  };
-
-  const fetchClaimableAmount = async () => {
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
+  const fetchClaimableAmount = useCallback(async () => {
+    if (!publicKey) return;
     try {
 
       if(fetchingPrsaleData.current) return;
@@ -331,11 +86,11 @@ const PresaleComp = () => {
       const presaleData = await presaleInstance.getParsedPresale();
       const presaleRegisteries = await presaleData.getAllPresaleRegistries()
 
-      
+
 
       const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
 
-      
+
 
       const onChainTimestamp = await getOnChainTimestamp(connection).then((ts) =>
         Number(ts)
@@ -347,7 +102,7 @@ const PresaleComp = () => {
       let totalClaimableLxx = 0;
 
       for (const escrow of escrows) {
-        
+
 
         // const floatValue = escrow.escrowAccount.totalDeposit.toString() / Math.pow(10, decimals);
         const floatValue = escrow.getDepositUiAmount();
@@ -355,7 +110,7 @@ const PresaleComp = () => {
 
         // totalClaimableLx = escrow.escrowAccount.pendingClaimToken.toString() / Math.pow(10, decimals);
         totalClaimableLx += escrow.getPendingClaimableUiAmount(presaleData, onChainTimestamp);
-        
+
         // totalClaimedLx = escrow.escrowAccount.totalClaimedToken.toString() / Math.pow(10, decimals);
         totalClaimedLx += escrow.getClaimedUiAmount();
 
@@ -399,7 +154,7 @@ const PresaleComp = () => {
       setClaimedLx(totalClaimedLx);
       setTotalClaimableLx(totalClaimableLxx);
 
-      
+
 
       const hardcap = presaleRegisteries[0].presaleMaximumCap.toString() / Math.pow(10, decimals);
       setHardcap(hardcap);
@@ -409,18 +164,14 @@ const PresaleComp = () => {
 
       fetchingPrsaleData.current = false;
 
-      
+
     } catch (error) {
-<<<<<<< HEAD
+      fetchingPrsaleData.current = false;
       console.error(error);
       toast.error(formatSolanaError(error));
-=======
-      fetchingPrsaleData.current = false;
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
     }
-  }, [connection, publicKey, setPresaleProgress, setTimeOver]);
+  }, [connection, publicKey, prealeVaultPda, setPresaleProgress, setTimeOver, setVestingOver, updateAll]);
 
-<<<<<<< HEAD
   const getSolBalance = useCallback(async () => {
     try {
       if (!publicKey) return 0;
@@ -428,14 +179,6 @@ const PresaleComp = () => {
       return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
     } catch (error) {
       console.error(error);
-=======
-  async function getSolBalance() {
-    try{
-    const pubkey = new PublicKey(address);
-    const lamports = await connection.getBalance(pubkey);
-    return lamports / LAMPORTS_PER_SOL; // convert lamports → SOL
-    }catch(error){
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
       return 0;
     }
   }, [connection, publicKey]);
@@ -546,16 +289,16 @@ const PresaleComp = () => {
 
     setInProgress(prev => ({...prev,deposit:true}));
 
-    
+
 
     try {
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),  // vault/presale address
+        new PublicKey(prealeVaultPda),  // vault/presale address
         new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
       );
 
-      
+
 
       const depositTx = await presaleInstance.deposit({
         amount: depositAmountLamports,
@@ -570,15 +313,15 @@ const PresaleComp = () => {
 
       setSolAmount('');
 
-      
+
       toast.success("Deposit confirmed");
-      
+
     } catch (error) {
       console.error(error);
       toast.error(formatSolanaError(error));
       setInProgress(prev => ({...prev,deposit:false}));
     }
-    
+
   };
 
   // Partial withdrawal during Ongoing (state 1). Requires a SOL amount input.
@@ -599,7 +342,7 @@ const PresaleComp = () => {
     setInProgress(prev => ({...prev, withdraw: true}));
     try {
       const presaleInstance = await Presale.create(
-        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+        connection, new PublicKey(prealeVaultPda), new PublicKey(PRESALE_PROGRAM_ID)
       );
       const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
       const txs = await Promise.all(
@@ -635,7 +378,7 @@ const PresaleComp = () => {
     setInProgress(prev => ({...prev, claim: true}));
     try {
       const presaleInstance = await Presale.create(
-        connection, new PublicKey(PRESALE_VAULT_PDA), new PublicKey(PRESALE_PROGRAM_ID)
+        connection, new PublicKey(prealeVaultPda), new PublicKey(PRESALE_PROGRAM_ID)
       );
       const escrows = await presaleInstance.getPresaleEscrowByOwner(publicKey);
       const txs = await Promise.all(
@@ -672,7 +415,7 @@ const PresaleComp = () => {
     try {
       const presaleInstance = await Presale.create(
         connection,
-        new PublicKey(PRESALE_VAULT_PDA),
+        new PublicKey(prealeVaultPda),
         new PublicKey(PRESALE_PROGRAM_ID)
       );
 
@@ -712,15 +455,9 @@ const PresaleComp = () => {
   };
 
   useEffect(() => {
-<<<<<<< HEAD
-    if (isConnected && address) {
-      queueMicrotask(() => {
-        updateAllBalances();
-      });
-=======
     if (isConnected && address && prealeVaultPda) {
       updateAllBalances();
-    }else{
+    } else {
       setSolBalance(0);
       setDepositedSol(0);
       setClaimableLx(0);
@@ -728,15 +465,14 @@ const PresaleComp = () => {
       setHardcap(0);
       setTotalDepositedSol(0);
     }
-  }, [isConnected,address,prealeVaultPda]);
-  
-  useEffect(() => {
+  }, [isConnected, address, prealeVaultPda]);
 
+  useEffect(() => {
     if(timeOver && vestingOver == false){
       if(fetchingPrsaleData.current) return;
       setTimeout(() => {
         updateAllBalances();
-      }, 3000); 
+      }, 3000);
     }
     if(timeOver == true && vestingOver == true){
       if(fetchingPrsaleData.current) return;
@@ -744,7 +480,7 @@ const PresaleComp = () => {
         updateAllBalances();
       }, 3000);
     }
-  }, [timeOver,vestingOver]);
+  }, [timeOver, vestingOver]);
 
   useEffect(() => {
     if(started){
@@ -754,37 +490,11 @@ const PresaleComp = () => {
     }
   }, [started]);
 
-  
-
-  useEffect(() => {
-    if (solAmount > 0 && solAmount <= solBalance) {
-      setLxAmount((solAmount * EXCHANGE_RATE).toLocaleString());
->>>>>>> 91ec4bcd0903877187790b06c4b06695f3c520f5
-    } else {
-      queueMicrotask(() => {
-        setSolBalance(0);
-        setDepositedSol(0);
-        setClaimableLx(0);
-        setClaimedLx(0);
-        setHardcap(0);
-        setTotalDepositedSol(0);
-      });
-    }
-  }, [isConnected, address, updateAllBalances]);
-  
-  useEffect(() => {
-    if (timeOver) {
-      queueMicrotask(() => {
-        updateAllBalances();
-      });
-    }
-  }, [timeOver, vestingOver, updateAllBalances]);
-
   const lxAmount =
     Number(solAmount) > 0 && Number(solAmount) <= solBalance
       ? (Number(solAmount) * EXCHANGE_RATE).toLocaleString()
       : 0;
-  
+
 
   return (
     <div id='presale' className="py-20 bg-secondary text-tertiary flex items-center justify-center p-6 font-sans">
@@ -947,7 +657,7 @@ const PresaleComp = () => {
 
         {/* Details List */}
         <div className="space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">
-          
+
           <div className="flex justify-between text-primary">
             <span className="text-tertiary">Network</span>
             <span className="text-primary text-[16px]">{network.toLocaleUpperCase()}</span>
@@ -998,7 +708,7 @@ const PresaleComp = () => {
         </div>
 
         {/* Action Button */}
-        {/* <button 
+        {/* <button
             className="cursor-pointer w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-2xl font-bold hover:scale-103 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
             onClick={()=>handleConnect()}
         >
