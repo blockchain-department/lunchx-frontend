@@ -561,7 +561,7 @@ const PresaleComp = () => {
         {presaleProgress === 3 && (
           <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center text-sm">
             <span className="text-red-400 font-semibold">Presale Failed</span>
-            <span className="text-tertiary/60"> — minimum cap was not reached. Your full deposit is available for refund.</span>
+            <span className="text-tertiary/60"> — minimum cap was not reached. {canRefund ? "Your full deposit is available for refund" : depositedSol > 0 ? "You have refunded your deposited SOL" : "Refunds are only available for deposits greater than 0 SOL"}.</span>
           </div>
         )}
         {presaleProgress === 2 && (
