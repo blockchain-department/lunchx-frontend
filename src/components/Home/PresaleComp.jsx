@@ -702,22 +702,18 @@ const PresaleComp = () => {
             <span className="text-tertiary">Deposited SOL</span>
             <span className="text-primary text-[16px]">{depositedSol}</span>
           </div>
-          <div className="flex justify-between text-primary">
+          {presaleProgress != 3 && <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimable LX (Now)</span>
             <span className="text-primary text-[16px]">{claimableLx}</span>
-          </div>
-          {/* <div className="flex justify-between text-primary">
-            <span className="text-tertiary">Claimable LX (After 15 Days)</span>
-            <span className="text-primary text-[16px]">{totalClaimableLx == ? totalClaimableLx - claimableLx : totalClaimableLx - claimedLx}</span>
-          </div> */}
-          <div className="flex justify-between text-primary">
+          </div>}
+          {presaleProgress != 3 && <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimable LX (Total)</span>
             <span className="text-primary text-[16px]">{totalClaimableLx}</span>
-          </div>
-          <div className="flex justify-between text-primary">
+          </div>}
+          {presaleProgress != 3 && <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimed LX</span>
             <span className="text-primary text-[16px]">{claimedLx}</span>
-          </div>
+          </div>}
         </div>
 
         <div className="mt-8 space-y-3 bg-secondary/20 rounded-2xl p-4 text-sm border border-tertiary/5">

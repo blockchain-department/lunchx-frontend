@@ -232,7 +232,8 @@ const Admin = () => {
 
   const [inProgress, setInProgress] = useState({
     create: false,
-    withdraw: false,
+    withdrawLx: false,
+    withdrawSol: false,
     collectFee: false,
     unsoldAction: false,
   });
@@ -346,7 +347,7 @@ const Admin = () => {
 
       const hardcap = Number(reg.presaleMaximumCap) / quoteDec;
       const deposited = Number(reg.presaleTotalDeposit) / quoteDec;
-      const supply = Number(reg.presaleSupply ?? 0) / dec;
+      const supply = Number(reg.getPresaleUiSupply());
       const softcap =
         Number(parsed.presaleAccount.presaleMinimumCap ?? 0) / quoteDec;
       const endTs = Number(parsed.presaleAccount.presaleEndTime) * 1000;
@@ -480,7 +481,13 @@ const Admin = () => {
   // ── Admin actions ────────────────────────────────────────────────────────────
 
   const handleWithdraw = async (type) => {
-    setInProgress(p => ({ ...p, withdraw: true }));
+
+    if (type === "sol") {
+      setInProgress(p => ({ ...p, withdrawSol: true }));
+    } else if (type === "lx") {
+      setInProgress(p => ({ ...p, withdrawLx: true }));
+    }
+    
     try {
       const tx = await presaleInstance.creatorWithdraw({ creator: publicKey });
       await sendTx(tx);
@@ -494,7 +501,11 @@ const Admin = () => {
       console.error(err);
       toast.error(formatSolanaError(err));
     } finally {
-      setInProgress(p => ({ ...p, withdraw: false }));
+      if (type === "sol") {
+        setInProgress(p => ({ ...p, withdrawSol: false }));
+      } else if (type === "lx") {
+        setInProgress(p => ({ ...p, withdrawLx: false }));
+      }
     }
   };
 
@@ -1923,7 +1934,7 @@ const Admin = () => {
               description={withdrawDescription}
               btnLabel={`Withdraw ${ql}`}
               btnActive={isCreator && isCompletedPresale}
-              loading={inProgress.withdraw}
+              loading={inProgress.withdrawSol}
               loadingLabel="Withdrawing..."
               onClick={() => handleWithdraw("sol")}
             />
@@ -1968,7 +1979,7 @@ const Admin = () => {
               to recover your unsold LX tokens back to your wallet."
               btnLabel="Recover LX"
               btnActive={isCreator && isFailedPresale}
-              loading={inProgress.withdraw}
+              loading={inProgress.withdrawLx}
               loadingLabel="Recovering..."
               onClick={() => handleWithdraw("lx")}
               />
