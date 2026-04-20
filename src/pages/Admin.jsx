@@ -71,7 +71,7 @@ const cls = {
 const DEPLOY_COMPUTE_UNITS = 600_000;
 const DEPLOY_MIN_FEE_BUFFER_LAMPORTS = 20_000_000; // 0.02 SOL buffer for tx fees/retries
 const CLUSTER_GENESIS_HASHES = {
-  devnet: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
+  'devnet': 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
   'mainnet-beta': '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
 };
 
@@ -246,6 +246,32 @@ const Admin = () => {
   );
   const [deployedMint, setDeployedMint] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
+  const [prealeVaultPda,setPrealeVaultPda] = useState(null);
+
+  useEffect(() => {
+    async function getUserVaultsEfficiently() {
+      const publicKeyEnv = new PublicKey(import.meta.env.VITE_PUBKEY);
+      const creatorBytes = publicKeyEnv.toBase58();
+      const programID = new PublicKey(PRESALE_PROGRAM_ID);
+      const accounts = await connection.getProgramAccounts(programID, {
+        encoding: 'base64',
+        filters: [
+          {
+            memcmp: {
+              offset: 8,
+              bytes: creatorBytes,
+            },
+          },
+        ],
+      });
+      console.log(accounts);
+      if(accounts.length > 0){
+        console.log(accounts[accounts.length - 1].pubkey.toBase58());
+        setPrealeVaultPda(accounts[accounts.length - 1].pubkey.toBase58());
+      }
+    }
+    getUserVaultsEfficiently();
+  }, [publicKey,connection,PRESALE_PROGRAM_ID]);
 
   const inProgressAny = Object.values(inProgress).some(Boolean);
 
@@ -259,7 +285,7 @@ const Admin = () => {
    *   statsVaultOverride state, then falls back to env PRESALE_VAULT_PDA.
    */
   const fetchStats = useCallback(async (explicitVault = null) => {
-    const targetVault = explicitVault ?? statsVaultOverride ?? PRESALE_VAULT_PDA;
+    const targetVault = prealeVaultPda;
 
     if (!targetVault) {
       setStats(null);
@@ -830,20 +856,20 @@ const Admin = () => {
       return;
     }
 
-    const expectedGenesisHash = CLUSTER_GENESIS_HASHES[network];
-    if (expectedGenesisHash) {
-      try {
-        const actualGenesisHash = await connection.getGenesisHash();
-        if (actualGenesisHash !== expectedGenesisHash) {
-          toast.error(`RPC cluster mismatch. Expected ${network} but connected RPC is different.`);
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error('Unable to verify the connected Solana cluster. Please retry.');
-        return;
-      }
-    }
+    // const expectedGenesisHash = CLUSTER_GENESIS_HASHES[network];
+    // if (expectedGenesisHash) {
+    //   try {
+    //     const actualGenesisHash = await connection.getGenesisHash();
+    //     if (actualGenesisHash !== expectedGenesisHash) {
+    //       toast.error(`RPC cluster mismatch. Expected ${network} but connected RPC is different.`);
+    //       return;
+    //     }
+    //   } catch (err) {
+    //     console.error(err);
+    //     toast.error('Unable to verify the connected Solana cluster. Please retry.');
+    //     return;
+    //   }
+    // }
 
     setInProgress(p => ({ ...p, create: true }));
     setNewVaultAddress('');

@@ -118,6 +118,43 @@ const PresaleComp = () => {
 
       }
 
+      const presaleAllowsRefund = presaleData.canWithdrawRemainingQuote();
+      const userHasRefundableEscrow = escrows.some(
+        escrow => escrow.canWithdrawRemainingQuoteAmount(presaleData)
+      );
+      setCanRefund(presaleAllowsRefund && userHasRefundableEscrow);
+
+      setDepositedSol(totalDepositedSol);
+      setClaimableLx(totalClaimableLx);
+      setClaimedLx(totalClaimedLx);
+      setTotalClaimableLx(totalClaimableLxx);
+
+      fetchingPrsaleData.current = false;
+
+    } catch (error) {
+      fetchingPrsaleData.current = false;
+      console.error(error);
+      toast.error(formatSolanaError(error));
+    }
+  }, [connection, publicKey, prealeVaultPda, setPresaleProgress, setTimeOver, setVestingOver, updateAll]);
+
+  const fetchGlobalPdaData = useCallback(async () => {
+    try {
+
+      const presaleInstance = await Presale.create(
+        connection,
+        new PublicKey(prealeVaultPda),  // vault/presale address
+        new PublicKey(PRESALE_PROGRAM_ID)  // PRESALE_PROGRAM_ID
+      );
+      const decimals = 9;
+
+      const presaleData = await presaleInstance.getParsedPresale();
+      const presaleRegisteries = await presaleData.getAllPresaleRegistries()
+
+      const onChainTimestamp = await getOnChainTimestamp(connection).then((ts) =>
+        Number(ts)
+      );
+
       const presaleState = presaleData.getPresaleProgressState();
       setPresaleProgress(presaleState);
 
@@ -125,14 +162,6 @@ const PresaleComp = () => {
       // guessing from raw state numbers.
       // canClaim(): state === Completed (2) AND currentTime >= vestingStartTime
       setCanClaim(presaleData.canClaim());
-      // canWithdrawRemainingQuote(): Failed (3) OR (Completed (2) AND Prorata mode)
-      // Per-escrow guard: isRemainingQuoteWithdrawn must be 0
-      const presaleAllowsRefund = presaleData.canWithdrawRemainingQuote();
-      const userHasRefundableEscrow = escrows.some(
-        escrow => escrow.canWithdrawRemainingQuoteAmount(presaleData)
-      );
-      setCanRefund(presaleAllowsRefund && userHasRefundableEscrow);
-
       // Presale has ended when Completed (2) or Failed (3)
       const endTime = presaleData.presaleAccount.vestingEndTime.toString();
       const secondsLeft = Math.floor((endTime * 1000 - Date.now()) / 1000);
@@ -146,15 +175,6 @@ const PresaleComp = () => {
       }else if(secondsLeft <= 0 && presaleState == 2){
         updateAll();
       }
-      // Note: state 3 is Failed (minimum cap not reached), not "vesting over".
-      // Do not call setVestingOver here — vesting only applies to Completed presales.
-
-      setDepositedSol(totalDepositedSol);
-      setClaimableLx(totalClaimableLx);
-      setClaimedLx(totalClaimedLx);
-      setTotalClaimableLx(totalClaimableLxx);
-
-
 
       const hardcap = presaleRegisteries[0].presaleMaximumCap.toString() / Math.pow(10, decimals);
       setHardcap(hardcap);
@@ -162,15 +182,11 @@ const PresaleComp = () => {
       const totalSol = presaleRegisteries[0].presaleTotalDeposit.toString() / Math.pow(10, decimals);
       setTotalDepositedSol(totalSol);
 
-      fetchingPrsaleData.current = false;
-
-
     } catch (error) {
-      fetchingPrsaleData.current = false;
       console.error(error);
       toast.error(formatSolanaError(error));
     }
-  }, [connection, publicKey, prealeVaultPda, setPresaleProgress, setTimeOver, setVestingOver, updateAll]);
+  }, [connection, prealeVaultPda, setPresaleProgress, setTimeOver, setVestingOver, updateAll]);
 
   const getSolBalance = useCallback(async () => {
     try {
@@ -308,6 +324,10 @@ const PresaleComp = () => {
       await sendAndConfirmWalletTx(depositTx);
 
       updateAllBalances();
+
+      if(prealeVaultPda){
+        fetchGlobalPdaData();
+      }
 
       setInProgress(prev => ({...prev,deposit:false}));
 
@@ -455,6 +475,9 @@ const PresaleComp = () => {
   };
 
   useEffect(() => {
+    if(prealeVaultPda){
+      fetchGlobalPdaData();
+    }
     if (isConnected && address && prealeVaultPda) {
       updateAllBalances();
     } else {
@@ -469,18 +492,24 @@ const PresaleComp = () => {
 
   useEffect(() => {
     if(timeOver && vestingOver == false){
+      if(prealeVaultPda){
+        fetchGlobalPdaData();
+      }
       if(fetchingPrsaleData.current) return;
       setTimeout(() => {
         updateAllBalances();
       }, 3000);
     }
     if(timeOver == true && vestingOver == true){
+      if(prealeVaultPda){
+        fetchGlobalPdaData();
+      }
       if(fetchingPrsaleData.current) return;
       setTimeout(() => {
         updateAllBalances();
       }, 3000);
     }
-  }, [timeOver, vestingOver]);
+  }, [timeOver, vestingOver,prealeVaultPda]);
 
   useEffect(() => {
     if(started){
