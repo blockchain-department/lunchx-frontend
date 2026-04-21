@@ -411,7 +411,7 @@ const Admin = () => {
 
   const sendTx = async (tx, extraSigners = []) => {
     if (!publicKey) {
-      const msg = "Wallet not ready. Reconnect your wallet and try again.";
+      const msg = "Wallet not detected. Make sure your wallet is connected and unlocked.";
       toast.error(msg);
       throw new Error(msg);
     }
@@ -495,7 +495,7 @@ const Admin = () => {
       if (type === "sol") {
         toast.success(`${quoteLabel(stats?.quoteMint)} withdrawn successfully`);
       } else if (type === "lx") {
-        toast.success("LX tokens withdrawn successfully");
+        toast.success("LX tokens withdrawn successfully to your Wallet.");
       }
       fetchStats();
     } catch (err) {
@@ -527,7 +527,7 @@ const Admin = () => {
   const handleUnsoldAction = async () => {
     if (stats?.state !== 2) {
       toast.error(
-        "Unsold token actions are only available after the presale ends",
+        "Presale is still active. Unsold tokens can be managed after it ends.",
       );
       return;
     }
@@ -536,7 +536,7 @@ const Admin = () => {
     try {
       const tx = await presaleInstance.performUnsoldBaseTokenAction(publicKey);
       await sendTx(tx);
-      toast.success("Unsold token action completed");
+      toast.success("Unsold tokens processed successfully.");
       fetchStats();
     } catch (err) {
       console.error(err);
@@ -556,7 +556,7 @@ const Admin = () => {
 
   const handleDeployToken = async () => {
     if (!publicKey) {
-      toast.error("Wallet not ready. Reconnect your wallet and try again.");
+      toast.error("Wallet not connected. Please reconnect and try again.");
       return;
     }
 
@@ -570,11 +570,11 @@ const Admin = () => {
     } = tokenForm;
 
     if (!tokenName.trim() || !tokenSymbol.trim() || !mintSupply) {
-      toast.error("Name, symbol, and supply are required");
+      toast.error("Please enter name, symbol, and supply.");
       return;
     }
     if (parseFloat(mintSupply) <= 0) {
-      toast.error("Supply must be greater than 0");
+      toast.error("Please enter a supply greater than 0.");
       return;
     }
 
@@ -723,12 +723,12 @@ const Admin = () => {
 
       const mintAddr = mintKeypair.publicKey.toBase58();
       setDeployedMint(mintAddr);
-      toast.success("Token deployed! Mint address copied to clipboard.");
+      toast.success("Token deployed successfully. Mint address copied to clipboard.");
       navigator.clipboard.writeText(mintAddr).catch(() => {});
     } catch (err) {
       console.error(err);
       const detail = formatSolanaError(err);
-      toast.error(`Deployment failed: ${detail}`);
+      toast.error(`Token deployment failed. ${detail}`);
       // Mark the in-progress step as errored
       setDeploySteps((prev) =>
         prev.map((s) =>
@@ -751,7 +751,7 @@ const Admin = () => {
 
   const handleCreate = async () => {
     if (!publicKey) {
-      toast.error('Connect your creator wallet before creating a presale.');
+      toast.error('Please connect your creator wallet to create a presale.');
       return;
     }
 
@@ -785,22 +785,22 @@ const Admin = () => {
     const endTs = Math.floor(new Date(form.endTime).getTime() / 1000);
 
     if (!Number.isFinite(startTs) || !Number.isFinite(endTs)) {
-      toast.error('Start time and end time must be valid dates.');
+      toast.error('Please enter valid start and end dates.');
       return;
     }
 
     if (endTs <= startTs) {
-      toast.error("End time must be after start time");
+      toast.error("Please ensure end time is after start time.");
       return;
     }
 
     if (!isValidPublicKeyString(form.baseMint)) {
-      toast.error('Base token mint must be a valid Solana public key.');
+      toast.error('Please enter a valid base token address.');
       return;
     }
 
     if (!isValidPublicKeyString(form.quoteMint)) {
-      toast.error('Quote token mint must be a valid Solana public key.');
+      toast.error('Please enter a valid quote token address.');
       return;
     }
 
@@ -822,33 +822,33 @@ const Admin = () => {
     const maxDepositRaw = form.maxDeposit || hardcapRaw || "0";
 
     if (!Number.isFinite(hardcap) || !Number.isFinite(softcap) || !Number.isFinite(totalSupply)) {
-      toast.error('Hard cap, soft cap, and total token supply must be valid numbers.');
+      toast.error('Please enter valid numbers for hard cap, soft cap, and total supply.');
       return;
     }
     if (!(hardcap > 0) || !(totalSupply > 0)) {
-      toast.error("Hard cap and total token supply must be greater than 0");
+      toast.error("Please enter values greater than 0 for hard cap and total supply.");
       return;
     }
     if (softcap < 0 || softcap > hardcap) {
-      toast.error("Soft cap must be between 0 and the hard cap");
+      toast.error("Please ensure Soft cap must be between 0 and the hard cap value.");
       return;
     }
     if (minDeposit < 0 || maxDeposit <= 0 || minDeposit > maxDeposit) {
       toast.error(
-        "Deposit caps are invalid. Ensure min deposit is not greater than max deposit",
+        "Invalid deposit limits. Min deposit cannot be greater than max deposit.",
       );
       return;
     }
     if (maxDeposit > hardcap) {
-      toast.error('Max deposit per wallet cannot exceed the hard cap.');
+      toast.error('Please set max deposit per wallet below or equal to the hard cap.');
       return;
     }
     if (depositFeeBps < 0 || depositFeeBps > 5000) {
-      toast.error("Deposit fee must be between 0 and 5000 bps");
+      toast.error("Please ensure deposit fee must be between 0 and 5000 bps");
       return;
     }
     if (tokenDecimals < 0 || tokenDecimals > 9) {
-      toast.error("Token decimals must be between 0 and 9");
+      toast.error("Please ensure token decimals must be between 0 and 9");
       return;
     }
 
@@ -868,12 +868,12 @@ const Admin = () => {
         return;
       }
       if (lockDuration < 0 || vestDuration < 0) {
-        toast.error("Lock and vest duration must be 0 or greater");
+        toast.error("Please enter a lock and vest duration of 0 or greater.");
         return;
       }
       if (immediateReleaseTs < endTs) {
         toast.error(
-          "Immediate release timestamp cannot be earlier than the presale end time",
+          "Immediate release timestamp cannot be before the presale end time.",
         );
         return;
       }
@@ -1014,7 +1014,7 @@ const Admin = () => {
       setStatsVaultOverride(vaultAddr);
       setActiveTab("stats");
       await fetchStats(vaultAddr);
-      toast.success("Presale created! Stats tab now shows the new vault.");
+      toast.success("Presale created successfully. The Stats tab now shows the new vault.");
     } catch (err) {
       console.error('[Admin] Presale creation failed', err);
       const detail = formatSolanaError(err);
@@ -1557,7 +1557,7 @@ const Admin = () => {
                     }));
                     setActiveTab("create");
                     toast.success(
-                      "Base Token Mint pre-filled in Create Presale",
+                      "Base token is pre-filled in Create Presale.",
                     );
                   }}
                   className="w-full py-2.5 rounded-xl text-sm font-semibold border border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer flex items-center justify-center gap-2"
