@@ -40,9 +40,6 @@ export const createWithdrawSchema = (solBalance,depositedSol) =>
         .refine((val) => val > 0, {
             message: "Please enter a valid amount",
         })
-        .refine((val) => val <= solBalance, {
-            message: "Insufficient balance",
-        })
         .refine((val) => val <= depositedSol, {
             message: "Insufficient deposited SOL",
         })
