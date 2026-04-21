@@ -10,6 +10,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import decimalToBN from '../../utilities/decimalToBN';
 import formatSolanaError from '../../utilities/formatSolanaError';
+import { createDepositSchema, createWithdrawSchema } from '../../utilities/zod';
 
 const PresaleComp = () => {
   const [solAmount, setSolAmount] = useState('');
@@ -285,23 +286,41 @@ const PresaleComp = () => {
       return;
     }
 
-    let depositAmountLamports;
-    try {
-      depositAmountLamports = decimalToBN(solAmount, 9);
-    } catch {
-      toast.error("Please enter a valid SOL amount");
+    const depositSchema = createDepositSchema(solBalance);
+
+    const result = await depositSchema.safeParseAsync({
+      solAmount,
+    });
+
+    if (!result.success) {
+      console.log("Deposit Schema Error:", result.error.format());
+
+      // optional: show first error
+      const firstError =
+        result.error.flatten().fieldErrors.solAmount?.[0];
+
+      if (firstError) toast.error(firstError);
+
       return;
     }
 
-    if (depositAmountLamports.lte(new BN(0))) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
+    let depositAmountLamports = result.data.solAmount;
+    // try {
+    //   depositAmountLamports = decimalToBN(solAmount, 9);
+    // } catch {
+    //   toast.error("Please enter a valid SOL amount");
+    //   return;
+    // }
 
-    if(solAmount > solBalance){
-      toast.error("Insufficient balance");
-      return;
-    }
+    // if (depositAmountLamports.lte(new BN(0))) {
+    //   toast.error("Please enter a valid amount");
+    //   return;
+    // }
+
+    // if(solAmount > solBalance){
+    //   toast.error("Insufficient balance");
+    //   return;
+    // }
 
     setInProgress(prev => ({...prev,deposit:true}));
 
@@ -348,16 +367,35 @@ const PresaleComp = () => {
   // Must NOT be called after completion — use claimTokens() for state 2.
   const withdrawPartial = async () => {
     if (!isConnected) { toast.error("Please connect your wallet"); return; }
-    let withdrawAmountLamports;
-    try {
-      withdrawAmountLamports = decimalToBN(solAmount, 9);
-    } catch {
-      toast.error("Please enter a valid SOL amount");
+    
+    const withdrawSchema = createWithdrawSchema(solBalance,depositedSol);
+
+    const result = await withdrawSchema.safeParseAsync({
+      solAmount,
+    });
+
+    if (!result.success) {
+      console.log("Withdraw Schema Error:", result.error.format());
+
+      // optional: show first error
+      const firstError =
+        result.error.flatten().fieldErrors.solAmount?.[0];
+
+      if (firstError) toast.error(firstError);
+
       return;
     }
-    if (withdrawAmountLamports.lte(new BN(0))) { toast.error("Please enter a valid amount"); return; }
-    if (solAmount > solBalance) { toast.error("Insufficient balance"); return; }
-    if (solAmount > depositedSol) { toast.error("Amount more than deposited"); return; }
+    
+    let withdrawAmountLamports = result.data.solAmount;
+    // try {
+    //   withdrawAmountLamports = decimalToBN(solAmount, 9);
+    // } catch {
+    //   toast.error("Please enter a valid SOL amount");
+    //   return;
+    // }
+    // if (withdrawAmountLamports.lte(new BN(0))) { toast.error("Please enter a valid amount"); return; }
+    // if (solAmount > solBalance) { toast.error("Insufficient balance"); return; }
+    // if (solAmount > depositedSol) { toast.error("Amount more than deposited"); return; }
 
     setInProgress(prev => ({...prev, withdraw: true}));
     try {
@@ -382,6 +420,7 @@ const PresaleComp = () => {
         empty: "No withdrawable escrow found",
       });
       setInProgress(prev => ({...prev, withdraw: false}));
+      setSolAmount(0);
     } catch (error) {
       console.error(error);
       toast.error(formatSolanaError(error));
@@ -561,7 +600,7 @@ const PresaleComp = () => {
         {presaleProgress === 3 && (
           <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center text-sm">
             <span className="text-red-400 font-semibold">Presale Failed</span>
-            <span className="text-tertiary/60"> — minimum cap was not reached. {canRefund ? "Your full deposit is available for refund" : depositedSol > 0 ? "You have refunded your deposited SOL" : "Refunds are only available for deposits greater than 0 SOL"}.</span>
+            <span className="text-tertiary/60"> — minimum cap was not reached. {(canRefund && depositedSol > 0) ? "Your full deposit is available for refund" : depositedSol > 0 ? "You have refunded your deposited SOL" : "Refunds are only available for deposits greater than 0 SOL"}.</span>
           </div>
         )}
         {presaleProgress === 2 && (
@@ -646,7 +685,7 @@ const PresaleComp = () => {
 
         <div className="flex items-center justify-center gap-2">
           {/* Deposit — Ongoing (state 1) only */}
-          {(isConnected && presaleProgress === 1) && <button
+          {(isConnected && presaleProgress === 1 && activeTab == "Deposit") && <button
             className={`${inProgress.deposit || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={() => depositTokens()}
             disabled={inProgress.deposit || inProgressGlobal}
@@ -656,7 +695,7 @@ const PresaleComp = () => {
           </button>}
 
           {/* Partial withdraw — Ongoing (state 1) only */}
-          {(isConnected && presaleProgress === 1) && <button
+          {(isConnected && presaleProgress === 1 && activeTab == "Claim") && <button
             className={`${inProgress.withdraw || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={() => withdrawPartial()}
             disabled={inProgress.withdraw || inProgressGlobal}
@@ -677,7 +716,7 @@ const PresaleComp = () => {
 
           {/* Refund — Failed (state 3) OR Completed + Prorata (canWithdrawRemainingQuote).
               Uses withdrawRemainingQuote(), returns full deposit + fees. No amount input needed. */}
-          {(isConnected && canRefund) && <button
+          {(isConnected && canRefund && depositedSol > 0) && <button
             className={`${inProgress.refund || inProgressGlobal ? "cursor-not-allowed" : "cursor-pointer"} w-full mt-8 bg-secondary/20 backdrop-blur-3xl text-primary border border-primary py-4 rounded-full font-bold hover:scale-101 duration-300 text-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}
             onClick={() => refundTokens()}
             disabled={inProgress.refund || inProgressGlobal}

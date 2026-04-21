@@ -36,6 +36,7 @@ import {
 import { PRESALE_PROGRAM_ID, PRESALE_VAULT_PDA, TOKEN_METADATA_URI, network } from '../utilities/config';
 import decimalToBN from '../utilities/decimalToBN';
 import formatSolanaError from '../utilities/formatSolanaError';
+import { createPresaleSchema } from '../utilities/zod';
 
 const WSOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -754,10 +755,31 @@ const Admin = () => {
       return;
     }
 
-    if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !derivedHardCapDisplay) {
-      toast.error('Please fill in all required fields.(*)');
+    const schema = createPresaleSchema();
+
+    const result = await schema.safeParseAsync({...form,derivedHardCapDisplay: derivedHardCapDisplay});
+
+    if (!result.success) {
+      console.log(result.error.format());
+
+      const errors = result.error.flatten().fieldErrors;
+
+      const firstError =
+        errors.baseMint?.[0] ||
+        errors.startTime?.[0] ||
+        errors.endTime?.[0] ||
+        errors.totalSupply?.[0] ||
+        errors.derivedHardCapDisplay?.[0];
+
+      if (firstError) toast.error(firstError);
+
       return;
     }
+
+    // if (!form.baseMint || !form.startTime || !form.endTime || !form.totalSupply || !derivedHardCapDisplay) {
+    //   toast.error('Fill in all required fields (*)');
+    //   return;
+    // }
 
     const startTs = Math.floor(new Date(form.startTime).getTime() / 1000);
     const endTs = Math.floor(new Date(form.endTime).getTime() / 1000);
