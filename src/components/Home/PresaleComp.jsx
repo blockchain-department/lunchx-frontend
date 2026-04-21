@@ -668,9 +668,7 @@ const PresaleComp = () => {
               />
               <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl cursor-pointer" onClick={() => {
                 if(activeTab == "Deposit"){
-                  if(solBalance >= (hardcap - totalDepositedSol)){
-                    setSolAmount(hardcap - totalDepositedSol);
-                  }
+                  setSolAmount(hardcap - totalDepositedSol);
                 }else{
                   setSolAmount(depositedSol);
                 }
