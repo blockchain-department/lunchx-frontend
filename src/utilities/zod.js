@@ -5,8 +5,7 @@ import decimalToBN from "./decimalToBN";
 export const createDepositSchema = (solBalance) =>
   z.object({
     solAmount: z
-        .string()
-        .min(1, "Amount is required")
+        .union([z.string(), z.number()])
         .refine((val) => !isNaN(Number(val)), {
             message: "Please enter a valid SOL amount",
         })
@@ -33,8 +32,7 @@ export const createDepositSchema = (solBalance) =>
 export const createWithdrawSchema = (solBalance,depositedSol) =>
   z.object({
     solAmount: z
-        .string()
-        .min(1, "Amount is required")
+        .union([z.string(), z.number()])
         .refine((val) => !isNaN(Number(val)), {
             message: "Please enter a valid SOL amount",
         })

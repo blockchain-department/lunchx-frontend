@@ -737,10 +737,10 @@ const PresaleComp = () => {
             <span className="text-tertiary">Vault Address</span>
             <span className="text-primary text-[16px]">{prealeVaultPda ? prealeVaultPda : "PRESALE HAS NOT STARTED YET!"}</span>
           </div>
-          {(canRefund && depositedSol > 0) && <div className="flex justify-between text-primary">
+          <div className="flex justify-between text-primary">
             <span className="text-tertiary">Deposited SOL</span>
             <span className="text-primary text-[16px]">{depositedSol}</span>
-          </div>}
+          </div>
           {presaleProgress != 3 && <div className="flex justify-between text-primary">
             <span className="text-tertiary">Claimable LX (Now)</span>
             <span className="text-primary text-[16px]">{claimableLx}</span>
