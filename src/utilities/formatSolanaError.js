@@ -34,7 +34,7 @@ export default function formatSolanaError(err) {
       'rejected the request',
     ])
   ) {
-    return 'Transaction cancelled in wallet.';
+    return 'Transaction cancelled in your wallet.';
   }
 
   if (
@@ -47,7 +47,7 @@ export default function formatSolanaError(err) {
       'exempt',
     ])
   ) {
-    return 'Insufficient SOL to cover the transaction amount and network fees.';
+    return 'You don’t have enough SOL. Add funds and try again.';
   }
 
   if (
@@ -65,7 +65,7 @@ export default function formatSolanaError(err) {
       'service unavailable',
     ])
   ) {
-    return 'The network is busy or the transaction expired. Please retry in a few seconds.';
+    return 'Network is busy. Please try again in a few seconds.';
   }
 
   if (
@@ -88,5 +88,5 @@ export default function formatSolanaError(err) {
     return joined.trim();
   }
 
-  return 'Transaction failed. Please try again.';
+  return 'Transaction failed. Make sure your wallet is connected and authorized.';
 }
