@@ -286,6 +286,10 @@ const PresaleComp = () => {
       return;
     }
 
+    if(solAmount > (hardcap - totalDepositedSol)){
+      return toast.error("Deposit Must be less than or equal to hardcap");
+    }
+
     const depositSchema = createDepositSchema(solBalance);
 
     const result = await depositSchema.safeParseAsync({
@@ -421,6 +425,13 @@ const PresaleComp = () => {
       });
       setInProgress(prev => ({...prev, withdraw: false}));
       setSolAmount(0);
+
+      updateAllBalances();
+
+      if(prealeVaultPda){
+        fetchGlobalPdaData();
+      }
+      
     } catch (error) {
       console.error(error);
       toast.error(formatSolanaError(error));
@@ -453,6 +464,13 @@ const PresaleComp = () => {
         empty: "No claimable escrow found",
       });
       setInProgress(prev => ({...prev, claim: false}));
+
+      updateAllBalances();
+
+      if(prealeVaultPda){
+        fetchGlobalPdaData();
+      }
+
     } catch (error) {
       console.error(error);
       toast.error(formatSolanaError(error));
@@ -506,6 +524,13 @@ const PresaleComp = () => {
         empty: "No refundable escrow found",
       });
       setInProgress(prev => ({...prev, refund: false}));
+
+      updateAllBalances();
+
+      if(prealeVaultPda){
+        fetchGlobalPdaData();
+      }
+
     } catch (error) {
       console.error(error);
       toast.error(formatSolanaError(error));
