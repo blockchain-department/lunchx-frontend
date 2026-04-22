@@ -290,10 +290,18 @@ const PresaleComp = () => {
       return toast.error("Deposit Must be less than or equal to hardcap");
     }
 
+    if(typeof(solAmount) == "string"){
+      if(solAmount.at(0) == "."){
+        return toast.error("Invalid Amount");
+      }
+    }
+
     const depositSchema = createDepositSchema(solBalance);
 
+    const cleanSolAmount = Number(Number(solAmount).toFixed(9));
+
     const result = await depositSchema.safeParseAsync({
-      solAmount,
+      solAmount: cleanSolAmount,
     });
 
     if (!result.success) {
@@ -625,7 +633,7 @@ const PresaleComp = () => {
         {presaleProgress === 3 && (
           <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center text-sm">
             <span className="text-red-400 font-semibold">Presale Failed</span>
-            <span className="text-tertiary/60"> — minimum cap was not reached. {(canRefund && depositedSol > 0) ? "Your full deposit is available for refund" : depositedSol > 0 ? "You have refunded your deposited SOL" : "Refunds are only available for deposits greater than 0 SOL"}.</span>
+            <span className="text-tertiary/60"> — minimum cap was not reached. {(canRefund && depositedSol > 0) ? "Your full deposit is available for refund" : depositedSol > 0 ? "You have refunded your deposited SOL. Unwrap them in your wallet" : "Refunds are only available for deposits greater than 0 SOL"}.</span>
           </div>
         )}
         {presaleProgress === 2 && (
@@ -656,7 +664,7 @@ const PresaleComp = () => {
            <div className="w-full bg-tertiary/5 border border-tertiary/10 rounded-2xl mt-1 p-4 transition-all">
             <div className="flex justify-between text-xs mb-2">
               <span className='text-tertiary'>You {activeTab === "Deposit" ? "Pay" : "Receive"}</span>
-              <span className='text-tertiary'>Balance: ~{solBalance.toFixed(2)} SOL</span>
+              <span className='text-tertiary'>Balance: ~{solBalance} SOL</span>
             </div>
             <div className="flex items-center gap-3">
               <input
@@ -671,7 +679,12 @@ const PresaleComp = () => {
                   if(solBalance > (hardcap - totalDepositedSol)){
                     setSolAmount(hardcap - totalDepositedSol);
                   }else{
-                    setSolAmount(solBalance);
+                    if(solBalance > 1){
+                      const FEE_BUFFER_SOL = 1; // safe default
+                      setSolAmount(solBalance - FEE_BUFFER_SOL);
+                    }else{
+                      setSolAmount(0);
+                    }
                   }
                 }else{
                   setSolAmount(depositedSol);

@@ -2061,13 +2061,13 @@ const Admin = () => {
                 iconColor="text-blue-400"
                 borderColor="border-blue-500"
                 title="Recover LX Tokens (Presale Failed)"
-                description="Recover your unsold LX tokens back to your wallet."
+                description="The presale did not reach its soft cap. Click to recover your unsold LX tokens back to your wallet."
                 btnLabel="Recover LX"
                 btnActive={isCreator && isFailedPresale && !alreadyWithdrawn}
                 loading={inProgress.withdrawLx}
                 loadingLabel="Recovering..."
                 onClick={() => handleWithdraw("lx")}
-              />
+          />
             )}
 
             {/* Refresh */}
