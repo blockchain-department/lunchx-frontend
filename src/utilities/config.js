@@ -53,3 +53,5 @@ export const PRESALE_VAULT_PDA = assertValidPublicKey(
 );
 export const TOKEN_METADATA_URI =
   'https://gateway.pinata.cloud/ipfs/bafkreiecr24e6jdwapydm2qplc7g7thfwaf7a4atgsffrrvpet3kdptab4';
+
+export const FEE_BUFFER_SOL = 0.01;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Wallet, Info, Zap, ArrowRight, BanknoteArrowUp, BanknoteArrowDown, Loader2 } from 'lucide-react';
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { PRESALE_PROGRAM_ID, network } from '../../utilities/config';
+import { FEE_BUFFER_SOL, PRESALE_PROGRAM_ID, network } from '../../utilities/config';
 import { Presale, getOnChainTimestamp } from '@meteora-ag/presale';
 import { BN } from 'bn.js';
 import toast from 'react-hot-toast';
@@ -299,6 +299,8 @@ const PresaleComp = () => {
     const depositSchema = createDepositSchema(solBalance);
 
     const cleanSolAmount = Number(Number(solAmount).toFixed(9));
+
+    if((cleanSolAmount+FEE_BUFFER_SOL)>solBalance) return toast.error("Transaction can fail due to insufficient fund");
 
     const result = await depositSchema.safeParseAsync({
       solAmount: cleanSolAmount,
@@ -679,8 +681,7 @@ const PresaleComp = () => {
                   if(solBalance > (hardcap - totalDepositedSol)){
                     setSolAmount(hardcap - totalDepositedSol);
                   }else{
-                    if(solBalance > 1){
-                      const FEE_BUFFER_SOL = 1; // safe default
+                    if(solBalance > FEE_BUFFER_SOL){ // safe default
                       setSolAmount(solBalance - FEE_BUFFER_SOL);
                     }else{
                       setSolAmount(0);
