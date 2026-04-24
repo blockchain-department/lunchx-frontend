@@ -280,31 +280,28 @@ const PresaleComp = () => {
   }, []);
 
   const depositTokens = async () => {
+  if (!isConnected) { toast.error("Please connect your wallet"); return; }
 
-    if(!isConnected){
-      toast.error("Please connect your wallet");
-      return;
-    }
+  // Normalize FIRST, before any checks
+  let normalizedAmount = solAmount;
+  if (typeof solAmount === "string" && solAmount.startsWith(".")) {
+    normalizedAmount = "0" + solAmount;
+  }
 
-    if(solAmount > (hardcap - totalDepositedSol)){
-      return toast.error("Deposit Must be less than or equal to hardcap");
-    }
+  const cleanSolAmount = Number(Number(normalizedAmount).toFixed(9));
 
-    if(typeof(solAmount) == "string"){
-      if(solAmount.at(0) == "."){
-        return toast.error("Invalid Amount");
-      }
-    }
+  // Now use cleanSolAmount for all subsequent checks
+  if (cleanSolAmount > (hardcap - totalDepositedSol)) {
+    return toast.error("Deposit Must be less than or equal to hardcap");
+  }
 
-    const depositSchema = createDepositSchema(solBalance);
+  const depositSchema = createDepositSchema(solBalance);
 
-    const cleanSolAmount = Number(Number(solAmount).toFixed(9));
+ if ((cleanSolAmount + FEE_BUFFER_SOL) > solBalance + 0.000000001) {
+  return toast.error("Transaction can fail due to insufficient fund");
+}
 
-    if((cleanSolAmount+FEE_BUFFER_SOL)>solBalance) return toast.error("Transaction can fail due to insufficient fund");
-
-    const result = await depositSchema.safeParseAsync({
-      solAmount: cleanSolAmount,
-    });
+const result = await depositSchema.safeParseAsync({ solAmount: cleanSolAmount });
 
     if (!result.success) {
       console.log("Deposit Schema Error:", result.error.format());
@@ -676,19 +673,20 @@ const PresaleComp = () => {
                 value={solAmount}
                 onChange={(e) => setSolAmount(e.target.value)}
               />
-              <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl cursor-pointer" onClick={() => {
-                if(activeTab == "Deposit"){
-                  if(solBalance > (hardcap - totalDepositedSol)){
-                    setSolAmount(hardcap - totalDepositedSol);
-                  }else{
-                    if(solBalance > FEE_BUFFER_SOL){ // safe default
-                      setSolAmount(solBalance - FEE_BUFFER_SOL);
-                    }else{
-                      setSolAmount(0);
-                    }
-                  }
-                }else{
-                  setSolAmount(depositedSol);
+              <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl cursor-pointer" 
+              onClick={() => {
+  if(activeTab == "Deposit"){
+    if(solBalance > (hardcap - totalDepositedSol)){
+      setSolAmount(parseFloat((hardcap - totalDepositedSol).toFixed(9)));
+    }else{
+      if(solBalance > FEE_BUFFER_SOL){
+        setSolAmount(parseFloat((solBalance - FEE_BUFFER_SOL).toFixed(9)));
+      }else{
+        setSolAmount(0);
+      }
+    }
+  }else{
+    setSolAmount(depositedSol);
                 }
               }}>
                 <span className="font-bold">MAX</span>
