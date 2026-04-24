@@ -691,7 +691,7 @@ const result = await depositSchema.safeParseAsync({ solAmount: cleanSolAmount })
               }}>
                 <span className="font-bold">MAX</span>
               </div>
-              <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-3 py-1.5 rounded-xl">
+              <div className="flex items-center justify-center gap-1 bg-tertiary/10 px-5 py-1.5 rounded-xl">
                 <img className='w-8 h-6' src="/sol.png" alt="sol logo" />
                 <span className="font-bold">SOL</span>
               </div>
